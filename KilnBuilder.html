@@ -1,0 +1,142 @@
+<!DOCTYPE HTML>
+<html>
+<link rel="stylesheet" media="all" href="KilnBuilder.css" type="text/css" />
+<!-- Footnote List -->
+<div class="footnotes">
+  <ol>
+    <li class="footnote" id="fn:1">
+      <p>footnote. <a href="#fnref:1" title="return to article"> ↩</a></p>
+      <p></p>
+    </li>
+  </ol>
+</div>
+
+
+  <fieldset>
+    <legend>Shelf Information</legend>
+    <fieldset>
+      <legend>Shelf Sizes</legend>
+      <div id=shelf_size class="controlgroup">
+        <label for="shelf_sizes" class="ui-controlgroup-label">Shelf Size</label>
+        <select id="shelf_sizes"> </select>
+
+        <label for="shelves_rotated" class="ui-controlgroup-label non-custom-shelf">Rotate Shelves</label>
+        <input type="checkbox" class="non-custom-shelf" name="shelves_rotated" id="shelves_rotated">
+
+        <label for="shelf_length" class="ui-controlgroup-label custom-shelf">Shelf Length</label>
+        <input id="shelf_length" class="ui-spinner-input custom-shelf" value=25 min=8 max=30>
+
+        <label for="shelf_width" class="ui-controlgroup-label custom-shelf">Shelf Width</label>
+        <input id="shelf_width" class="ui-spinner-input custom-shelf" value=19 min=8 max=30>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Number of Shelves</legend>
+      <div id=shelf_number class="controlgroup">
+        <label for="shelves_wide" class="ui-controlgroup-label">Wide</label>
+        <input id="shelves_wide" class="ui-spinner-input" value=2 min=1 max=4>
+
+        <label for="shelves_long" class="ui-controlgroup-label">Long</label>
+        <input id="shelves_long" class="ui-spinner-input" value=2 min=1 max=4>
+      </div>
+    </fieldset>
+  </fieldset>
+  <div id="tabs">
+    <ul>
+      <li><a id='kiln_info_tab_proxy' href="#kiln_info_tab">Kiln Statistics</a></li>
+      <li><a id='sideview_tab_proxy' href="#sideview_tab">Side View</a></li>
+      <li><a id='birdseye_tab_proxy' href="#birdseye_tab">Birds-eye View</a></li>
+    </ul>
+    <div id="sideview_tab">
+      <div id="side_view_area">
+      </div>
+    </div>
+
+    <div id="birdseye_tab">
+      <div id="birds_eye_area">
+      </div>
+    </div>
+    <div id="kiln_info_tab">
+      <table class="tg">
+        <thead>
+          <tr>
+            <th class="tg-0lax"></th>
+            <th class="tg-0lax">Length</th>
+            <th class="tg-0lax">Width</th>
+            <th class="tg-0lax">Height</th>
+            <th class="tg-0lax">Square Inches</th>
+            <th class="tg-0lax">Cubic Feet</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tg-0lax">Firebox</td>
+            <td class="tg-0lax" id="firebox_length"></td>
+            <td class="tg-0lax" id="firebox_width"></td>
+            <td class="tg-0lax" id="firebox_height"></td>
+            <td class="tg-0lax" id="firebox_square"></td>
+            <td class="tg-0lax" id="firebox_cubic"></td>
+          </tr>
+          <tr>
+            <td class="tg-0lax">Chamber</td>
+            <td class="tg-0lax" id="chamber_length"></td>
+            <td class="tg-0lax" id="chamber_width"></td>
+            <td class="tg-0lax" id="chamber_height"></td>
+            <td class="tg-0lax" id="chamber_square"></td>
+            <td class="tg-0lax" id="chamber_cubic"></td>
+          </tr>
+          <tr>
+            <td class="tg-0lax">Chimney</td>
+            <td class="tg-0lax" id="chimney_length"></td>
+            <td class="tg-0lax" id="chimney_width"></td>
+            <td class="tg-0lax" id="chimney_height"></td>
+            <td class="tg-0lax" id="chimney_square"></td>
+            <td class="tg-0lax" id="chimney_cubic"></td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+      <table class="tg">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Width</th>
+            <th>Length</th>
+            <th>Side Thumbnail</th>
+            <th>Birds Eye Thumbnail</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tg-0lax">Kiln</td>
+            <td class="tg-0lax" id="kiln_length"></td>
+            <td class="tg-0lax" id="kiln_width"></td>
+            <td class="tg-0lax" id="side_thumbnail_area"></td>
+            <td class="tg-0lax" id="birdseye_thumbnail_area"></td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+      <table class="tg">
+        <thead>
+          <tr>
+            <th class="tg-0lax"></th>
+            <th class="tg-0lax">Super Duty</th>
+            <th class="tg-0lax">Medium Duty</th>
+            <th class="tg-0lax">Insulating (IFB)</th>
+          </tr>
+        </thead>
+        <tr>
+          <td class="tg-0lax"> Number of Bricks</td>
+          <td class="tg-0lax" id="num_supers"></td>
+          <td class="tg-0lax" id="num_mediums"></td>
+          <td class="tg-0lax" id="num_IFBs"></td>
+        </tr>
+      </table>
+    </div>
+
+  </div>
+</body>
+<script src="KilnBuilder.js"></script>
+
+</html>
