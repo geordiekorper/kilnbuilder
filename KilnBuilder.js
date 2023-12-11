@@ -4,70 +4,8 @@
 /* eslint-disable camelcase */
 
 /*
-TODO:
-  Compute ratios
-  Separate out the calculations from the drawing
-  Add JSON export of kiln configuration
-  Allow removing bricks by clicking on them
-  Add flemish header layer capability
-  Make firebox and chimney calculations real
-  Make height multiple of width
-  Add amount of wood calculation
-  Add cost calculations
-  Add explanation text from spreadsheet
-  Add usable/stackable cubic feet calculation
-  Add number of bricks per layer
-  Add Firing time stuff
-  Add share stuff
-  Make bag wall into real bag wall.
-  Make throat into real throat
-  seperate out shelf building stuff from calculation? Maybe allow manual entering based on number of bricks or inches
-  Fix rotation offset bug in shelf drawing
-  */
-
-/*
-TODO: Integrate this
-
-Calculator is designed to calculate an approximate minimum number of bricks you should have on hand
-Half bricks are ALWAYS rounded up to 1 when counted even if there are two in a row! (see above)
-There is no accounting for openings for doors, peeps, etc.. (see above). With a very few exceptions these holes will still be filled with bricks at least sometimes.
-The roof is not inclued in the calculation of number of bricks at this time. Depending upon the size you can either do an arch or a flat removable top.
-
-Simplicity of construction is one of the main goals but durability, safety, and/or cost may nudge things towards a different form of simplicity.
-
-Size of the kiln is based upon the size of the shelves and how many shelves you want to fit
-Shelves will need a minimum of 1 inch of extra space on each side
-
-Interior walls are High/Super duty hard fire bricks (H) because they will be exposed to flames and ash
-Exterior bricks are soft Insulating fire bricks (I) unless there will be another brick sliding against them (around peepholes and air inlets)
-Exterior bricks which will experience wear should be Medium duty (M) bricks at a minimum
-
-The floor is 3 layers:
-Layer 0 - Cinder block is used to provide a flat semi-insulating platform for the bricks
-Layer 1 - Insulating Fire Brick (IFB) to keep heat from escaping from the bottom
-Layer 2 - High/Super duty hard fire bricks for the floor because it will be exposed to heat and ash
-
-The 9 Principles of Design from Kiln Building by Olsen will be followed as much as possible
-Principle 1 - A cube [cross-section] is the best all-purpose shape for a kiln
-Principle 2 - The chamber shape is determined by heat direction and ease of flame movement to allow a natural flow
-Principle 3 - A specific amount of grate area or combustion area is needed for natural draft
-Principle 4 - The taper of the chimney controls the rate of draft
-Principle 5 - for natural draft killns there should be 3 feet of chimney to every foot of downward pull, plus 1 foot for every 3 feet of horizantal.
-Principle 6 - Chimney diameter is approximately 1/4 to 1/5 of chamber (for rectangular kilns such as a train this would be the diagonal)
-Principle 7 - A tall chimney increases velocity inside the firing chamber.
-Principle 8 - The height of the chimney of a chamber kiln should be equal to the slope of the kiln (N/A)
-Principle 9 - Critical areas of the kiln should be planned and built to be altered easily
-
-The number of shelves and their size determine how big a chamber you will have and the chamber size will determine the size of the firebox and chimney. 
-Only the highlighted values need to be changed to determine everything else!
-
-The Width and Height will be the same as per Olsen's principle 1
-The chamber size will be rounded up to the closest 9" in order to minimize the number of bricks which must be cut.
-* Revenue here can be thought of as how much would it cost if you used someone else's kiln 
-  or how much you could make by offering such a a service.
-Wood
-Type    Cords  $ per cord
-Pine    3      $200.00
+TODO: 
+  Compute ratios (not sure what this means so I am leaving it here for now)
 */
 
 let env = 'dev';
@@ -94,7 +32,7 @@ const unit = standardBrick.width
 
 // Scale
 const birdseye_scale = 4;
-const sideview_scale = 5;
+const sideview_scale = 10;
 
 // Globals
 let layers = [];
