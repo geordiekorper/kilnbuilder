@@ -647,7 +647,7 @@ class Kiln {
    * @returns {void}
    */
   calculateDimensions() {
-    readValuesFromPage();
+    page.readValues();
     shelves.generateShelves();
     chamber.calculate();
     firebox.calculate();
@@ -682,7 +682,7 @@ class Kiln {
     drawSideView(layers, sideview_scale);
     drawBirdseyeView(layers);
     shelves.draw();
-    updatePageElements();
+    page.updateElements();
   }
 }
 
@@ -723,7 +723,7 @@ let shelves = {
     $("#shelf_sizes option").eq(selected_index).prop('selected', true).parent().selectmenu("refresh");
 
     //Refresh the page now that the shelves have been rotated
-    refreshPage();
+    page.refreshPage()();
     console.debug('rotateDefaultSizes finished');
   },
 
@@ -1475,12 +1475,12 @@ class Page {
   initializeControls() {
     $('.controlgroup').controlgroup();
     $('.controlgroup').controlgroup('option', 'onlyVisible', true);
-    $('#shelf_sizes').on('selectmenuchange', refreshPage);
+    $('#shelf_sizes').on('selectmenuchange', page.refreshPage());
     $('#shelves_rotated').on('change', shelves.rotateDefaultSizes);
-    $('#shelves_wide').on('spinstop', refreshPage);
-    $('#shelves_long').on('spinstop', refreshPage);
-    $('#shelf_width').on('spinstop', refreshPage);
-    $('#shelf_length').on('spinstop', refreshPage);
+    $('#shelves_wide').on('spinstop', page.refreshPage());
+    $('#shelves_long').on('spinstop', page.refreshPage());
+    $('#shelf_width').on('spinstop', page.refreshPage());
+    $('#shelf_length').on('spinstop', page.refreshPage());
     $('.custom-shelf').hide();
     $('.custom-shelf').children().hide();
     $('#tabs').tabs();  
@@ -1514,20 +1514,13 @@ class Page {
   }
 }
 
-//stubs to make the code compile until I can figure out how to get the page object to work
-function refreshPage() {page.refreshPage()}
-function updatePageElements() { page.updateElements()}
-function clearDrawingAreas() {page.clearDrawingAreas()}
-function initializePageElements() {page.initializeControls();}
-function readValuesFromPage() {page.readValues()}
-
 function main() {
   setDebugLevel(env)
   // Initialize all the elements on the page
 
   shelves.populateDropdown();
-  initializePageElements()
-  refreshPage();
+  page.initializeControls()
+  page.refreshPage();
 }
 const page = new Page();
 let kiln = new Kiln();
