@@ -723,7 +723,7 @@ let shelves = {
     $("#shelf_sizes option").eq(selected_index).prop('selected', true).parent().selectmenu("refresh");
 
     //Refresh the page now that the shelves have been rotated
-    page.refreshPage()();
+    page.refreshPage();
     console.debug('rotateDefaultSizes finished');
   },
 
@@ -734,7 +734,7 @@ let shelves = {
 
     $.each(shelves.shelf_sizes, function (size) {
       let shelf_description = shelves.shelf_sizes[size][0] + 'x' + shelves.shelf_sizes[size][1];
-      console.log('Populating dropdown with shelf_description: ' + shelf_description);
+      console.debug('Populating dropdown with shelf_description: ' + shelf_description);
       $('#shelf_sizes').append($('<option>', {
         value: shelf_description,
         text: shelf_description
@@ -792,7 +792,7 @@ let shelves = {
     // The chamber that they sit in will be calculated in bricks though.
     let [shelf_length, shelf_width] = [shelves.length, shelves.width];
     const myBox = shelves.getBoundingBox();
-    console.log(`Shelves bounding box is: ${JSON.stringify(myBox)}`);
+    console.debug(`Shelves bounding box is: ${JSON.stringify(myBox)}`);
     this.instances = [];  
     for (let col = 0; col < shelves.num_long; col++) {
       for (let row = 0; row < shelves.num_wide; row++) {
@@ -997,8 +997,8 @@ class Chimney extends KilnSection {
     chimney.cubic = (chimney.square * chimney.height / cubic_foot).toFixed(1);
     chimney.layers = chimney.height / standardBrick.height;
     chimney.ratio = chimney.square / firebox.square
-    console.log(`Optimal chimney size would be ${firebox.square / 10}-${firebox.square / 7}`)
-    console.log(`Chimney ratio is ${chimney.ratio}`)  }
+    console.info(`Optimal chimney size would be ${firebox.square / 10}-${firebox.square / 7}`)
+    console.info(`Chimney ratio is ${chimney.ratio}`)  }
 }
 
 
@@ -1247,7 +1247,7 @@ function drawBirdseyeView(layers) {
 
     drawBricksOnLayer(layer, my_ctx, birdseye_scale);
 
-    console.info(`Layer ${layerNum} IFB: ${layer_num_IFBs} Super: ${layer_num_supers} Medium: ${layer_num_mediums}`)
+    console.debug(`Layer ${layerNum} IFB: ${layer_num_IFBs} Super: ${layer_num_supers} Medium: ${layer_num_mediums}`)
   });
 }
 
@@ -1450,22 +1450,15 @@ class Page {
     // Reset variables
     layers = [];
     num_IFBs = num_mediums = num_supers = 0
-    this.clearDrawingAreas();
+    // Clear the drawing areas before we start
+    $('#birds_eye_area').empty();
+    $('#birdseye_thumbnail_area').empty();
+    $('#side_view_area').empty();
+    $('#side_thumbnail_area').empty();  
     kiln.calculateDimensions()
     kiln.createLayers();
     kiln.draw();  
 }
-
-  /**
-   * Clears the existing drawing areas on the page.
-   *
-   * @returns {void}
-   */
-  clearDrawingAreas() {
-    $('#birds_eye_area').empty();
-    $('#birdseye_thumbnail_area').empty();
-    $('#side_view_area').empty();
-    $('#side_thumbnail_area').empty();  }
 
   /**
    * Initializes various elements on the page.
@@ -1475,12 +1468,12 @@ class Page {
   initializeControls() {
     $('.controlgroup').controlgroup();
     $('.controlgroup').controlgroup('option', 'onlyVisible', true);
-    $('#shelf_sizes').on('selectmenuchange', page.refreshPage());
+    $('#shelf_sizes').on('selectmenuchange', page.refreshPage);
     $('#shelves_rotated').on('change', shelves.rotateDefaultSizes);
-    $('#shelves_wide').on('spinstop', page.refreshPage());
-    $('#shelves_long').on('spinstop', page.refreshPage());
-    $('#shelf_width').on('spinstop', page.refreshPage());
-    $('#shelf_length').on('spinstop', page.refreshPage());
+    $('#shelves_wide').on('spinstop', page.refreshPage);
+    $('#shelves_long').on('spinstop', page.refreshPage);
+    $('#shelf_width').on('spinstop', page.refreshPage);
+    $('#shelf_length').on('spinstop', page.refreshPage);
     $('.custom-shelf').hide();
     $('.custom-shelf').children().hide();
     $('#tabs').tabs();  
@@ -1517,7 +1510,6 @@ class Page {
 function main() {
   setDebugLevel(env)
   // Initialize all the elements on the page
-
   shelves.populateDropdown();
   page.initializeControls()
   page.refreshPage();
