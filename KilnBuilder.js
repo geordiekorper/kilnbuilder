@@ -1215,33 +1215,7 @@ function createLayer(layer_type) {
   layers.push(layer)
 }
 
-function createCanvas(canvasName, areaId, scale, width, height) {
-  // Create a canvas and add it to the area that matches the canvasName_area unless an areaId is specified
-  // If an areaId is specified then we will return the canvas and context as properties of the canvasName
-  // otherwise we will return the canvas and context as properties as my_canvas and my_ctx
-  if (areaId === "") {
-    areaId = canvasName + '_area'
-  }
-  console.debug('Creating canvas and ctx for: ' + canvasName +' in ' + areaId)
-  fullCanvasName = canvasName + '_canvas';
-  $('<canvas>').attr({ id: fullCanvasName }).appendTo(`#${areaId}`);
-  $('<span>&nbsp;</span>').appendTo(`#${areaId}`);
-  const my_canvas = document.getElementById(fullCanvasName);
-  const my_ctx = my_canvas.getContext('2d');
-  my_canvas.height = height * scale;
-  my_canvas.width = width * scale;
-  if (areaId === canvasName + '_area') {
-    console.debug(`CreateCanvas returning: ${canvasName}_canvas and ${canvasName}_ctx`)
-    return { [`${canvasName}_canvas`]: my_canvas, [`${canvasName}_ctx`]: my_ctx };
-  }else 
-  { // We assume that if an areaId is specified then the area is using multiple canvases with generated variables
-    //  for the canvas names so we return the canvas and context as properties with a generic known names which 
-    //  the calling function can map to its own variables if it wants to
-    console.debug(`CreateCanvas returning: my_canvas, my_ctx`)
 
-    return { my_canvas, my_ctx };
-  }
-}
 
 function drawBricksOnLayer(layer, ctx, scale) {
   for (let col = 0; col < layer.length; col++) {
@@ -1262,11 +1236,11 @@ function drawBirdseyeView(layers) {
     layer_num_IFBs = layer_num_mediums = layer_num_supers = 0
 
     const canvasName = 'Layer' + layerNum;
-    const { my_canvas, my_ctx } = createCanvas(canvasName, 'birds_eye_area', birdseye_scale, kiln.length, kiln.width);
+    const { my_canvas, my_ctx } = page.createCanvas(canvasName, 'birds_eye_area', birdseye_scale, kiln.length, kiln.width);
 
 
     if (layerNum === 2) {
-      const { birdseye_thumbnail, birdseye_thumbnail_ctx } = createCanvas('birdseye_thumbnail', "", 1, kiln.length, kiln.width);
+      const { birdseye_thumbnail, birdseye_thumbnail_ctx } = page.createCanvas('birdseye_thumbnail', "", 1, kiln.length, kiln.width);
       $('#birdseye_thumbnail_area').on('click', function () { $('#birdseye_tab_proxy').trigger('click') })
       drawBricksOnLayer(layer, birdseye_thumbnail_ctx, 1);
     }
@@ -1294,11 +1268,11 @@ function drawSideView(layers, scale) {
   // Although we could just copy a scaled back down version of the main view to a thumbnail
   // due to all the straight lines for the bricks it looks a lot better if we draw at the right scale
 
-  const  { side_view_canvas, side_view_ctx } = createCanvas('side_view', '', scale, kiln.length, kiln.height);
+  const  { side_view_canvas, side_view_ctx } = page.createCanvas('side_view', '', scale, kiln.length, kiln.height);
 
   // Thumbnail canvas
   const  { side_thumbnail_canvas, side_thumbnail_ctx } = 
-    createCanvas('side_thumbnail', 'side_thumbnail_area', 1, kiln.length, kiln.height);
+    page.createCanvas('side_thumbnail', 'side_thumbnail_area', 1, kiln.length, kiln.height);
 
   $('#side_thumbnail_area').on('click', function () { $('#sideview_tab_proxy').trigger('click') })
 
@@ -1509,7 +1483,35 @@ class Page {
     $('#shelf_length').on('spinstop', refreshPage);
     $('.custom-shelf').hide();
     $('.custom-shelf').children().hide();
-    $('#tabs').tabs();  }
+    $('#tabs').tabs();  
+  }
+  createCanvas(canvasName, areaId, scale, width, height) {
+    // Create a canvas and add it to the area that matches the canvasName_area unless an areaId is specified
+    // If an areaId is specified then we will return the canvas and context as properties of the canvasName
+    // otherwise we will return the canvas and context as properties as my_canvas and my_ctx
+    if (areaId === "") {
+      areaId = canvasName + '_area'
+    }
+    console.debug('Creating canvas and ctx for: ' + canvasName +' in ' + areaId)
+    let fullCanvasName = canvasName + '_canvas';
+    $('<canvas>').attr({ id: fullCanvasName }).appendTo(`#${areaId}`);
+    $('<span>&nbsp;</span>').appendTo(`#${areaId}`);
+    const my_canvas = document.getElementById(fullCanvasName);
+    const my_ctx = my_canvas.getContext('2d');
+    my_canvas.height = height * scale;
+    my_canvas.width = width * scale;
+    if (areaId === canvasName + '_area') {
+      console.debug(`CreateCanvas returning: ${canvasName}_canvas and ${canvasName}_ctx`)
+      return { [`${canvasName}_canvas`]: my_canvas, [`${canvasName}_ctx`]: my_ctx };
+    }else 
+    { // We assume that if an areaId is specified then the area is using multiple canvases with generated variables
+      //  for the canvas names so we return the canvas and context as properties with a generic known names which 
+      //  the calling function can map to its own variables if it wants to
+      console.debug(`CreateCanvas returning: my_canvas, my_ctx`)
+  
+      return { my_canvas, my_ctx };
+    }
+  }
 }
 
 //stubs to make the code compile until I can figure out how to get the page object to work
