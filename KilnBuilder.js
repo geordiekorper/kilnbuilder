@@ -13,22 +13,14 @@ let env = 'dev';
 // Constants
 
 // There are two things that influence the size of a kiln the bricks and the shelves
-const standardBrick = {
-  width: 4.5,
-  length: 9,
-  height: 2.5,
-  types: {
-    // Conductivity is "Thermal Conductivity 750°C (W/m.°K)"
-    IFB: { color: 'WhiteSmoke', initial: 'I', cost: 2.5, conductivity: 0.3 },
-    Super: { color: 'FireBrick', initial: 'S', cost: 1.5, conductivity: 1 },
-    Medium: { color: 'Bisque', initial: 'M', cost: 1, conductivity: 1.1 }
-  }
-}
+
+// Bricks
+const standardBrick = { width: 4.5,length: 9, height: 2.5,}
 
 // Units
 const square_foot = 12 * 12;
 const cubic_foot = square_foot * 12;
-const unit = standardBrick.width
+const horizantalUnit   = standardBrick.width
 
 // Scale
 const birdseye_scale = 4;
@@ -59,7 +51,7 @@ let layer_num_IFBs, layer_num_supers, layer_num_mediums;
 
 let wall = {
   // A wall is a grid of bricks that is oriented either perpendicular to the viewer's perspective (portrait) or parallel to it (landscape).
-  // Walls are measured in units which are the 1/2 width of a standard brick (2.25" in imperial).
+  // Walls are measured in horizantalUnit  s which are the 1/2 width of a standard brick (2.25" in imperial).
   // See the kiln diagram above for more details about the walls that make up the kiln.
   // Not countinng the base that the walls sit on there are 2 interior and 4 exterior walls which interlock with each other to form the kiln.
   // The 4 exterior walls are: the left wall, back wall, front wall, and right wall
@@ -242,7 +234,7 @@ let walls = {
         walls.create(layer, myLayerType, aWall);
 
         // Create along chimney
-        aWall.units_long = chimney.depth / unit + 3
+        aWall.units_long = chimney.depth / horizantalUnit   + 3
         aWall.y_offset = 1;
         aWall.x_offset = kiln.units_long - aWall.units_long - 1
         aWall.brick_courses = [
@@ -262,7 +254,7 @@ let walls = {
         }
         console.debug('Creating left hand wall above firebox height.');
         aWall.y_offset = 1;
-        aWall.units_long = chimney.depth / unit + 3
+        aWall.units_long = chimney.depth / horizantalUnit   + 3
         aWall.x_offset = kiln.units_long - aWall.units_long - 1
         aWall.brick_courses = [
           ['Medium', 'internal']
@@ -317,7 +309,7 @@ let walls = {
         walls.create(layer, myLayerType, aWall);
 
         // Create along chimney
-        aWall.units_long = chimney.depth / unit + 3
+        aWall.units_long = chimney.depth / horizantalUnit   + 3
         aWall.x_offset = kiln.units_long - aWall.units_long - 1
         aWall.brick_courses = [
           ['Medium', 'internal']
@@ -335,7 +327,7 @@ let walls = {
         }
         console.debug('Creating right hand wall above firebox height.');
 
-        aWall.units_long = chimney.depth / unit + 3
+        aWall.units_long = chimney.depth / horizantalUnit   + 3
         aWall.x_offset = kiln.units_long - aWall.units_long - 1
         aWall.brick_courses = [
           ['Medium', 'internal']
@@ -628,15 +620,15 @@ class Kiln {
       walls.bag_wall.depth +
       chimney.depth +
       walls.back_wall.depth;
-    this.units_long = this.length / unit;
+    this.units_long = this.length / horizantalUnit  ;
 
-    this.width = chamber.width + (4 * unit)
-    this.units_wide = this.width / unit;
+    this.width = chamber.width + (4 * horizantalUnit  )
+    this.units_wide = this.width / horizantalUnit  ;
 
-    walls.throat.col = (walls.front_wall.depth + firebox.depth) / unit;
+    walls.throat.col = (walls.front_wall.depth + firebox.depth) /horizantalUnit  ;
     chamber.offset = ((walls.throat.col / 2 + 1) * standardBrick.length);
 
-    walls.bag_wall.col = walls.throat.col + (chamber.length / unit) + 2;
+    walls.bag_wall.col = walls.throat.col + (chamber.length / horizantalUnit  ) + 2;
     chimney.offset = ((walls.bag_wall.col / 2 + 1) * standardBrick.length);
   }
   /**
@@ -663,7 +655,13 @@ class Kiln {
   */
   createLayers() {
     // Clear existing layers
+    // Old global variable will be moved to a local variable
     layers = [];
+
+    this.layers = new Layers(this.units_long, this.units_wide);
+    this.layers.createBaseLayer('landscape', 'IFB');
+    this.layers.createBaseLayer('portrait', 'Super');
+
     createBaseLayer('landscape', 'IFB');
     createBaseLayer('portrait', 'Super');
     for (let index = 0; index < chimney.layers; index++) {
@@ -961,19 +959,19 @@ class Chamber extends KilnSection {
     // We need to fit the shelves in the chamber and make sure that
     // the total size is rounded up the nearest whole brick.
     const estimated_length = this.deadspace_front + shelves.total_length + this.deadspace_back;
-    let units_long = Math.ceil(estimated_length / unit);
+    let units_long = Math.ceil(estimated_length / horizantalUnit  );
     if (units_long % 2 !== 0) { units_long += 1 }
-    this.length = units_long * unit;
+    this.length = units_long * horizantalUnit  ;
 
     // Any extra space should be added to the front deadspace
     // TODO: Make the deadspace a modifiable variable 
     this.deadspace_front = 9 + this.length - estimated_length;
-    let units_wide = Math.ceil((shelves.total_width + (this.deadspace_sides * 2)) / unit);
+    let units_wide = Math.ceil((shelves.total_width + (this.deadspace_sides * 2)) / horizantalUnit  );
     if (units_wide % 2 !== 0) { units_wide += 1 }
 
     console.debug(`Rows and columns in chamber: ${units_long}x${units_wide}`)
 
-    this.width = units_wide * unit;
+    this.width = units_wide * horizantalUnit  ;
     // TODO: Make the chanmber height something that can be varied
     this.height = this.width;
     this.square = this.width * this.length;
@@ -1002,7 +1000,6 @@ class Chimney extends KilnSection {
 }
 
 
-
 /**
  * Class representing a brick.
  */
@@ -1013,14 +1010,42 @@ class Brick {
    * @param {number} y - The y coordinate of the brick.
    * @param {string} type - The type of the brick.
    * @param {string} orientation - The orientation of the brick.
-   * @param {string} color - The color of the brick.
    */
-  constructor(x, y, type, orientation, color) {
+  constructor({ 
+    layer = 0, 
+    x = 0, 
+    y = 0, 
+    width = standardBrick.width,
+    length = standardBrick.length, 
+    height = standardBrick.height, 
+    type='Super', 
+    orientation='landscape'
+  }) 
+  // The constructor above accepts an object as a parameter which allows us to pass in named parameters 
+  // without having to remember the order of them. We put eah one on a new line to make it easier to read.
+  {
     this.x = x;
     this.y = y;
     this.type = type;
     this.orientation = orientation;
-    this.color = color;
+    this.layer = layer;
+    if (orientation === 'landscape') {
+      this.width = length;
+      this.length = width;
+    } else if (orientation === 'portrait') {
+      this.width = width;
+      this.length = length;
+    } else {
+      console.error('***unknown brick orientation***')
+    }
+    this.height = height;
+    this.types =  {
+      // Conductivity is "Thermal Conductivity 750°C (W/m.°K)"
+      IFB:    { color: 'WhiteSmoke', initial: 'I', cost: 2.5, conductivity: 0.3 },
+      Super:  { color: 'FireBrick',  initial: 'S', cost: 1.5, conductivity: 1 },
+      Medium: { color: 'Bisque',     initial: 'M', cost: 1,   conductivity: 1.1 }
+    }
+    this.color = this.types[this.type].color;
   }
   /**
  * Draw the brick on a specified context, scaled by a specified factor.
@@ -1041,48 +1066,31 @@ class Brick {
     } else { console.error(`***unknown brick type*** ${brickType}`) }
   }
 
-drawFromTop(ctx, scale) {
-  // While we are drawing we keep track of the count of types of bricks
-  // to prevent double counting we only increment it if we are drawing from the top
-  // and are drawing at a scale greater than 1 (i.e. we are not drawing a thumbnail)
-  let width, length;
-  let x = this.x * unit * scale;
-  let y = this.y * unit * scale;
-  if (this.orientation === 'landscape') {
-    width = standardBrick.length * scale;
-    length = standardBrick.width * scale;
-  } else if (this.orientation === 'portrait') {
-    width = standardBrick.width * scale;
-    length = standardBrick.length * scale;
-  } else {  
-    console.error('***unknown brick orientation***')
-  }
-  this.draw(ctx, scale, x, y, width, length);
-  // If we aren't drawing a thumbnail then we need to increment the brick count
-  if (scale > 1) {
-    this.incrementBrickCount(this.type)
-  }
+  drawFromTop(ctx, scale) {
+    // While we are drawing we keep track of the count of types of bricks
+    // to prevent double counting we only increment it if we are drawing from the top
+    // and are drawing at a scale greater than 1 (i.e. we are not drawing a thumbnail)
+    let x = this.x * horizantalUnit   * scale;
+    let y = this.y * horizantalUnit   * scale;
+    let width = this.width * scale;
+    let length = this.length * scale;
 
-}
+    // Draw the brick
+    this.draw(ctx, x, y, width, length);
+
+    // If we aren't drawing a thumbnail then we need to increment the brick count
+    if (scale > 1) {this.incrementBrickCount(this.type)}
+
+  }
 drawFromSide(ctx, scale) {
-  let width, length;
-  let x = this.x * unit * scale;
-  let y = this.y * unit * scale * (standardBrick.height / unit);
-  if (this.orientation === 'landscape') {
-    width = standardBrick.length * scale;
-    length = standardBrick.height * scale;
-  } else if (this.orientation === 'portrait') {
-    width = standardBrick.width * scale;
-    length = standardBrick.height * scale;
-  } else {  
-    console.error('***unknown brick orientation***')
-  }
-  this.draw(ctx, scale, x, y, width, length);
+  let x = this.x * horizantalUnit   * scale;
+  let y = this.y * horizantalUnit   * scale * (standardBrick.height / horizantalUnit  );
+  this.draw(ctx, x, y, this.width, this.height);
 }
 
-  draw(ctx, scale, x, y, width, length) {
+  draw(ctx, x, y, width, length) {
 
-    console.debug(`Drawing brick at ${x}:${y} ${length}:${width} with scale ${scale}`)
+    console.log(`Drawing ${this.orientation} brick at ${x}:${y} ${length}:${width}}`)
     ctx.strokeStyle = 'gray';
     ctx.fillStyle = this.color;
     ctx.beginPath();
@@ -1135,6 +1143,45 @@ function createBaseLayer(oriented, brickType) {
     }
   }
   layers.push(layer)
+}
+
+
+class Layers {
+
+  constructor(units_long, units_wide) {
+    this.units_long = units_long;
+    this.units_wide = units_wide;
+    this.layers = [];
+  }
+
+  createBaseLayer(oriented, brickType) {
+    let layer = this.initializeLayer();
+
+    for (let col = 0; col < this.units_long;) {
+      for (let row = 0; row < this.units_wide;) {
+       //const myBrick = new Brick(col, row_num_to_draw, aBrick.type, aBrick.orientation);
+
+        layer[col][row] = { type: brickType, orientation: oriented };
+        row += this.calculateRowIncrement(oriented);
+      }
+      col += this.calculateColumnIncrement(oriented);
+    }
+
+    this.layers.push(layer);
+  }
+
+  initializeLayer() {
+    return new Array(this.units_long).fill().map(() => new Array(this.units_wide).fill());
+  }
+
+  calculateRowIncrement(orientation) {
+    return orientation === 'landscape' ? 1 : 2;
+  }
+
+  calculateColumnIncrement(orientation) {
+    return orientation === 'landscape' ? 2 : 1;
+ }
+
 }
 
 /**
@@ -1223,7 +1270,7 @@ function drawBricksOnLayer(layer, ctx, scale) {
       for (let row = 0; row < layer[col].length; row++) {
         if (layer[col][row]) {
           const aBrick = layer[col][row];
-          const myBrick = new Brick(col, row, aBrick.type, aBrick.orientation, standardBrick.types[aBrick.type].color);
+          const myBrick = new  Brick({ x: col, y: row, type: aBrick.type, orientation: aBrick.orientation});
           myBrick.drawFromTop(ctx, scale)
         }
       };
@@ -1259,7 +1306,7 @@ function drawBirdseyeView(layers) {
  * @function
  * @name drawSideView
  * @param {Array} layers - An array of layer objects, each representing a layer of bricks in the kiln.
- * @param {number} scale - The scale factor to apply to the drawing. A scale of 1 would draw the kiln at 1 unit per pixel
+ * @param {number} scale - The scale factor to apply to the drawing. A scale of 1 would draw the kiln at 1 horizantalUnit   per pixel
  * @returns {void}
  */
 function drawSideView(layers, scale) {
@@ -1311,25 +1358,10 @@ function drawSideView(layers, scale) {
         // console.debug('There is no brick to be found.')
       }
       if (aBrick.type) {
-        const myBrick = new Brick(col, row_num_to_draw, aBrick.type, aBrick.orientation, standardBrick.types[aBrick.type].color);
+        const myBrick = new  Brick({ x: col, y: row_num_to_draw, type: aBrick.type, orientation: aBrick.orientation});
+
         myBrick.drawFromSide(side_view_ctx, scale); 
         myBrick.drawFromSide(side_thumbnail_ctx, 1);
-        // drawBrickFromSide(
-        //   side_view_ctx,
-        //   scale,
-        //   col,
-        //   row_num_to_draw,
-        //   aBrick.type,
-        //   aBrick.orientation
-        // )
-        // drawBrickFromSide(
-        //   side_thumbnail_ctx,
-        //   1,
-        //   col,
-        //   row_num_to_draw,
-        //   aBrick.type,
-        //   aBrick.orientation
-        //)
       }
     }
   };
@@ -1507,6 +1539,15 @@ class Page {
   }
 }
 
+function getScaledRect(x, y, width, length, scale) {
+  let scaledValues = [
+    x * scale,
+    y * scale,
+    length * scale,
+    width * scale,
+  ];
+  return scaledValues;
+}
 function main() {
   setDebugLevel(env)
   // Initialize all the elements on the page
@@ -1519,5 +1560,6 @@ let kiln = new Kiln();
 let chamber = new Chamber();
 let firebox = new Firebox();
 let chimney = new Chimney();
+
 
 main();
