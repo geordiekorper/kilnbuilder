@@ -15,16 +15,17 @@ let env = 'dev';
 // There are two things that influence the size of a kiln the bricks and the shelves
 
 // Bricks
-const standardBrick = { width: 4.5,length: 9, height: 2.5,}
+const standardBrick = { width: 4.5, length: 9, height: 2.5, }
 
 // Units
 const square_foot = 12 * 12;
 const cubic_foot = square_foot * 12;
-const horizantalUnit  = standardBrick.width;
+const horizantalUnit = standardBrick.width;
+const verticalUnit = standardBrick.height;
 
 // Scale
-const birdseye_scale = 5;
-const sideview_scale = 4;
+const birdseye_scale = 18;
+const sideview_scale = 8;
 
 // Globals
 // let layers = [];
@@ -156,7 +157,10 @@ let walls = {
     col: 0,
     depth: standardBrick.length,
     create(layer, layer_type) {
+
+      const currentLayer = kiln.numOfLayers - 2;
       const aWall = {
+        layer_type: layer_type,
         orientation: 'cross-wise',
         units_long: kiln.units_wide,
         x_offset: 0,
@@ -177,8 +181,8 @@ let walls = {
       }
       // The front wall is pretty simple because it is as high as the firebox and 
       // only interacts with the side wall
-      if (kiln.numOfLayers < firebox.layers) {
-        walls.create(layer, layer_type, aWall)
+      if (currentLayer < firebox.layers) {
+        walls.create(layer, aWall)
       } else {
         // Don't need to do anything.
       }
@@ -188,9 +192,9 @@ let walls = {
     col: 0, // Where the wall starts on the left
     depth: standardBrick.length,
     create(layer, layer_type) {
-      let myLayerType = layer_type;
-      const currentLayer = kiln.numOfLayers
+      const currentLayer = kiln.numOfLayers - 2
       const aWall = {
+        layer_type: layer_type,
         orientation: 'length-wise',
         units_long: kiln.units_long,
         x_offset: 0,
@@ -202,7 +206,7 @@ let walls = {
       }
       console.debug(`walls.left_wall.create --- currentLayer:${currentLayer} layer_type:${layer_type} length:${aWall.units_long} offsets:${aWall.y_offset}/${aWall.x_offset}`)
 
-      if (myLayerType === 'header') {
+      if (aWall.layer_type === 'header') {
         // Header rows only need one brick so we override that.
         // We also shorten the row and offset 
         // this is because the front and back rows go the whole width of the kiln
@@ -215,58 +219,61 @@ let walls = {
 
       if (currentLayer < chamber.layers) {
         // Create a full length wall
-        walls.create(layer, layer_type, aWall)
+        walls.create(layer, aWall)
         console.debug('Creating left hand wall below chamber height.')
       } else if (currentLayer < firebox.layers) {
         console.debug('Creating left hand wall below firebox height.');
 
         // Create along firebox
-        if (myLayerType === 'header') {
+        if (aWall.layer_type === 'header') {
           aWall.units_long = walls.throat.col
         } else {
           aWall.units_long = walls.throat.col + 2
         }
-        walls.create(layer, myLayerType, aWall);
+        walls.create(layer, aWall);
 
         // Create along chimney
-        aWall.units_long = chimney.depth / horizantalUnit   + 3
+        aWall.units_long = chimney.depth / horizantalUnit + 3
         aWall.y_offset = 1;
         aWall.x_offset = kiln.units_long - aWall.units_long - 1
         aWall.brick_courses = [
           ['Medium', 'internal']
         ]
 
-        if (myLayerType === 'header') {
+        if (aWall.layer_type === 'header') {
           // The chimney does not have header rows above the chamber height because it is only 1 brick thick.
-          myLayerType = 'even'
+          aWall.layer_type = 'even'
         }
-        walls.create(layer, myLayerType, aWall)
+        walls.create(layer, aWall)
       } else if (currentLayer > firebox.layers) {
         // If we are above the height of the firebox then it is chimney only
         // there are no header rows there and it is only a single brick thick
-        if (myLayerType === 'header') {
-          myLayerType = 'even'
+        if (aWall.layer_type === 'header') {
+          aWall.layer_type = 'even'
         }
         console.debug('Creating left hand wall above firebox height.');
         aWall.y_offset = 1;
-        aWall.units_long = chimney.depth / horizantalUnit   + 3
+        aWall.units_long = chimney.depth / horizantalUnit + 3
         aWall.x_offset = kiln.units_long - aWall.units_long - 1
         aWall.brick_courses = [
           ['Medium', 'internal']
         ]
-        walls.create(layer, myLayerType, aWall)
+        walls.create(layer, aWall)
       } else {
         console.error('Something is broken in the left_wall function')
       }
     }
   },
+
+
   right_wall: {
     col: 0,
     depth: standardBrick.length,
     create(layer, layer_type) {
-      let myLayerType = layer_type;
-      const currentLayer = kiln.numOfLayers
+      // We ignore the two base layers because they are not walls
+      const currentLayer = kiln.numOfLayers - 2
       const aWall = {
+        layer_type: layer_type,
         orientation: 'length-wise',
         units_long: kiln.units_long,
         x_offset: 0,
@@ -277,7 +284,7 @@ let walls = {
         ]
       }
 
-      if (myLayerType === 'header') {
+      if (aWall.layer_type === 'header') {
         // Header rows only need one brick so we override that.
         // We also shorten the row and offset it because
         // the front and back rows go the whole width of the kiln
@@ -290,44 +297,44 @@ let walls = {
 
       if (currentLayer < chamber.layers) {
         // Create a full length wall
-        walls.create(layer, myLayerType, aWall)
+        walls.create(layer, aWall)
         console.debug('Creating right hand wall below chamber height.');
       } else if (currentLayer < firebox.layers) {
         console.debug('Creating right hand wall below firebox height.');
 
         // Create along firebox
-        if (myLayerType === 'header') {
+        if (aWall.layer_type === 'header') {
           aWall.units_long = walls.throat.col
         } else {
           aWall.units_long = walls.throat.col + 2
         }
-        walls.create(layer, myLayerType, aWall);
+        walls.create(layer, aWall);
 
         // Create along chimney
-        aWall.units_long = chimney.depth / horizantalUnit   + 3
+        aWall.units_long = chimney.depth / horizantalUnit + 3
         aWall.x_offset = kiln.units_long - aWall.units_long - 1
         aWall.brick_courses = [
           ['Medium', 'internal']
         ]
-        if (myLayerType === 'header') {
+        if (aWall.layer_type === 'header') {
           // The chimney does not have header rows above the chamber height because it is only 1 brick thick.
-          myLayerType = 'even'
+          aWall.layer_type = 'even'
         }
-        walls.create(layer, myLayerType, aWall)
+        walls.create(layer, aWall)
       } else if (currentLayer > firebox.layers) {
         // If we are above the height of the firebox then it is chimney only
         // there are no header rows there and it is only a single brick thick
-        if (myLayerType === 'header') {
-          myLayerType = 'even'
+        if (aWall.layer_type === 'header') {
+          aWall.layer_type = 'even'
         }
         console.debug('Creating right hand wall above firebox height.');
 
-        aWall.units_long = chimney.depth / horizantalUnit   + 3
+        aWall.units_long = chimney.depth / horizantalUnit + 3
         aWall.x_offset = kiln.units_long - aWall.units_long - 1
         aWall.brick_courses = [
           ['Medium', 'internal']
         ]
-        walls.create(layer, myLayerType, aWall)
+        walls.create(layer, aWall)
       }
     }
   },
@@ -335,65 +342,60 @@ let walls = {
     col: 0,
     depth: standardBrick.length,
     create(layer, layer_type) {
-      const currentLayer =kiln.numOfLayers - 2
+      const currentLayer = kiln.numOfLayers - 2
 
       // eslint-disable-next-line prefer-const
       let aWall = {
+        layer_type: layer_type,
         orientation: 'cross-wise',
-        units_long: kiln.units_wide,
+        units_long: kiln.units_wide - 1,
         x_offset: walls.throat.col,
         y_offset: 0,
-        brick_courses: [
-          ['Super', 'internal'],
-          ['Super', 'internal']
-        ]
       }
-      if (currentLayer >= firebox.layers) {
+      if (currentLayer > firebox.layers) {
         // Throat does not need to be drawn above the firebox height so we can return immediately
         return
-      } else if (layer_type === 'header') {
+      } 
+      else if (aWall.layer_type === 'header') {
         // The interlacing is different above the chamber though so we need to adjust where things go.
         if (currentLayer < chamber.layers) {
           // We are inside the kiln and need to interlace this header row with the side walls
-          aWall.units_long = kiln.units_wide - 3;
-          aWall.brick_courses = [
-            ['Super', 'internal']
-          ];
-        } else {
+          aWall.brick_courses = [['Super', 'internal']];
+        } 
+        else {
           // The wall is now an outside wall because we are above the chamber
-          aWall.units_long = kiln.units_wide;
-          aWall.y_offset -= 1;
-          aWall.brick_courses = [
-            ['Super', 'external']
-          ];
+          aWall.brick_courses = [['Super', 'external']];
         }
-      } else if (currentLayer < chamber.layers) {
+      }
+      else if (currentLayer < chamber.layers) {
         // Not a header and below the chamber height
         aWall.brick_courses = [
           ['Super', 'internal'],
           ['Super', 'internal']
         ];
-      } else if (currentLayer < firebox.layers) {
+      } 
+      else if (currentLayer < firebox.layers) {
         // Not a header and above the chamber height
         aWall.brick_courses = [
           ['Super', 'internal'],
           ['IFB', 'external']
         ];
-      } else {
+      } 
+      else {
         console.error(`Somehow we ended up with a brick in an unexpected place at Layer=${currentLayer} Layer Type=${layer_type}`);
       }
-      walls.create(layer, layer_type, aWall);
+      walls.create(layer, aWall);
     }
   },
   bag_wall: {
     col: 0,
     depth: standardBrick.length,
     create(layer, layer_type) {
-      let myLayerType = layer_type;
-      const currentLayer =kiln.numOfLayers - 2
+      const currentLayer = kiln.numOfLayers - 2;
 
       // eslint-disable-next-line prefer-const
       let aWall = {
+        layer_type: layer_type,
         orientation: 'cross-wise',
         units_long: kiln.units_wide,
         x_offset: walls.bag_wall.col,
@@ -406,11 +408,11 @@ let walls = {
         aWall.brick_courses = [
           ['Medium', 'internal']
         ];
-        if (myLayerType === 'header') {
+        if (aWall.layer_type === 'header') {
           // If we are singled walled headers are not possible so we treat it at as an even row
-          myLayerType = 'even'
+          aWall.layer_type = 'even'
         }
-      } else if (myLayerType === 'header') {
+      } else if (aWall.layer_type === 'header') {
         // Below the height of the chamber we treat header rows normally
         aWall.brick_courses = [
           ['Super', 'internal']
@@ -425,13 +427,13 @@ let walls = {
       } else {
         // Can't get here because the currentLayer has to be either one of <,=,>
       }
-      walls.create(layer, myLayerType, aWall)
+      walls.create(layer, aWall)
     },
     throat: {
       col: 0,
       depth: standardBrick.length,
       create(layer, layer_type) {
-        const currentLayer =kiln.numOfLayers - 2
+        const currentLayer = kiln.numOfLayers
 
         // eslint-disable-next-line prefer-const
         let aWall = {
@@ -478,7 +480,7 @@ let walls = {
         } else {
           console.error(`Somehow we ended up with a brick in an unexpected place at Layer=${currentLayer} Layer Type=${layer_type}`);
         }
-        walls.create(layer, layer_type, aWall);
+        walls.create(layer, aWall);
       }
     }
   },
@@ -486,11 +488,11 @@ let walls = {
     col: 0,
     depth: standardBrick.length,
     create(layer, layer_type) {
-      let myLayerType = layer_type;
-      const currentLayer =kiln.numOfLayers - 2
+      const currentLayer = kiln.numOfLayers - 2
 
       // eslint-disable-next-line prefer-const
       let aWall = {
+        layer_type: layer_type,
         orientation: 'cross-wise',
         units_long: kiln.units_wide,
         x_offset: kiln.units_long - 2,
@@ -503,13 +505,13 @@ let walls = {
 
       // TODO: Clean this up to be more self-explanatory
       if (currentLayer >= chamber.layers) {
-        // When above the chamber we need to only draw a sigle walled chimney
+        // When above the chamber we need to only draw a single walled chimney
         aWall.brick_courses = [
           ['Medium', 'internal']
         ];
-        if (myLayerType === 'header') {
-          // If we are singled walled headers are not possible so we treat it at as an even row
-          myLayerType = 'even'
+        if (aWall.layer_type === 'header') {
+          // If we are singled walled then headers are not possible so we treat it at as an even row
+          aWall.layer_type = 'even'
         }
       } else if (layer_type === 'header') {
         // Below the height of the chimney we treat header rows normally
@@ -521,12 +523,13 @@ let walls = {
       } else {
         // In this case the basic wall we defined originally does not require overrides.
       }
-      walls.create(layer, myLayerType, aWall)
+      walls.create(layer, aWall)
     }
   },
-  create(layer, layer_type, wall) {
-    const width = wall.brick_courses.length
-    const length = wall.units_long
+  create(layer, wall) {
+    const layer_type = wall.layer_type;
+    const width = wall.brick_courses.length;
+    const length = wall.units_long;
     let x_offset = wall.x_offset;
     let y_offset = wall.y_offset;
     let additional_offset = 0;
@@ -536,7 +539,7 @@ let walls = {
     brick_orientation = 'landscape';
 
     console.debug(`Wall is: ${JSON.stringify(wall)}`);
-    console.debug(`walls.create --- layer_type:${layer_type} length:${wall.units_long} offsets:${wall.y_offset}/${wall.x_offset} additional_offset: ${additional_offset}`)
+    console.log(`walls.create --- layer_type:${layer_type} length:${wall.units_long} offsets:${wall.y_offset}/${wall.x_offset} additional_offset: ${additional_offset}`)
 
     if (wall.orientation === 'length-wise') {
       let columns_to_draw = length / 2
@@ -565,6 +568,9 @@ let walls = {
             brick_orientation = 'portrait'
             real_column = col + x_offset + additional_offset;
           }
+          console.log(`Creating ${wall.orientation}  ${brick_orientation} ${brickType} ${kiln.numOfLayers}:${real_column}:${real_row} in walls.create-length-wise.`);
+          const new_brick = new Brick({ layer: kiln.numOfLayers, x: real_column, y: real_row, type: brickType, orientation: brick_orientation });
+          insertBrick(layer, real_column, real_row, new_brick)
         }
       }
     } else if (wall.orientation === 'cross-wise') {
@@ -595,15 +601,15 @@ let walls = {
             brick_orientation = 'landscape'
             real_row = row + y_offset + additional_offset;
           }
+          console.log(`Creating ${wall.orientation}  ${brick_orientation} ${brickType} ${kiln.numOfLayers}:${real_column}:${real_row} in walls.create-length-wise.`);
+          const new_brick = new Brick({ layer: kiln.numOfLayers, x: real_column, y: real_row, type: brickType, orientation: brick_orientation });
+          insertBrick(layer, real_column, real_row, new_brick)
         }
       }
-    }else {
+    } else {
       console.error('walls.create --- wall.orientation is not valid')
     }
-    
-    console.debug(`Creating ${brick_orientation} ${brickType} ${real_column}:${real_row} in walls.create-length-wise.`);
-    const new_brick = new Brick({ layer: kiln.numOfLayers, x: real_column, y: real_row, type: brickType, orientation: brick_orientation});
-    insertBrick(layer, real_column, real_row, new_brick)
+
   }
 };
 
@@ -625,15 +631,14 @@ class Kiln {
       walls.bag_wall.depth +
       chimney.depth +
       walls.back_wall.depth;
-    this.units_long = this.length / horizantalUnit  ;
+    this.units_long = this.length / horizantalUnit;
+    this.width = chamber.width + (4 * horizantalUnit)
+    this.units_wide = this.width / horizantalUnit;
 
-    this.width = chamber.width + (4 * horizantalUnit  )
-    this.units_wide = this.width / horizantalUnit  ;
-
-    walls.throat.col = (walls.front_wall.depth + firebox.depth) /horizantalUnit  ;
+    walls.throat.col = (walls.front_wall.depth + firebox.depth) / horizantalUnit;
     chamber.offset = ((walls.throat.col / 2 + 1) * standardBrick.length);
 
-    walls.bag_wall.col = walls.throat.col + (chamber.length / horizantalUnit  ) + 2;
+    walls.bag_wall.col = walls.throat.col + (chamber.length / horizantalUnit) + 2;
     chimney.offset = ((walls.bag_wall.col / 2 + 1) * standardBrick.length);
   }
   /**
@@ -668,8 +673,6 @@ class Kiln {
     this.layers.createBaseLayer('landscape', 'IFB');
     this.layers.createBaseLayer('portrait', 'Super');
 
-//    createBaseLayer('landscape', 'IFB');
- //   createBaseLayer('portrait', 'Super');
     for (let index = 0; index < chimney.layers; index++) {
       if ((index + 2) % 6 === 0) {
         createLayer('header');
@@ -706,7 +709,7 @@ let shelves = {
   rotated: false,
   extra_space: 1,
   instances: [],
-  shelf_sizes: [[8,16],[11,22],[11,23],[12,12],[12,24],[13,14],[13,26],[14,28],[16,16],[19,25],[20,20],[24,24]],
+  shelf_sizes: [[8, 16], [11, 22], [11, 23], [12, 12], [12, 24], [13, 14], [13, 26], [14, 28], [16, 16], [19, 25], [20, 20], [24, 24]],
 
   rotateDefaultSizes() {
     // Rotate the shelf sizes so that the longest dimension is the width (or revert to the original if it is already that way)
@@ -747,7 +750,7 @@ let shelves = {
       }));
     })
     // add the Custom option
-    $('#shelf_sizes').append($('<option>', {value: "Custom",text: "Custom"}));
+    $('#shelf_sizes').append($('<option>', { value: "Custom", text: "Custom" }));
   },
 
   updateShelvesOffset() {
@@ -767,22 +770,24 @@ let shelves = {
    * @returns {void}
    */
   draw() {
-    // Center shelves in chamber
-    this.updateShelvesOffset();
-    // Canvas for main view
-    const KilnFloor_canvas = document.getElementById('Layer1_canvas');
-    const KilnFloor_ctx = KilnFloor_canvas.getContext('2d');
+    //   // Center shelves in chamber
+    //   this.updateShelvesOffset();
+    //   // Canvas for main view
+    //   const KilnFloor_canvas = document.getElementById('Layer2_canvas');
+    //   const KilnFloor_ctx = KilnFloor_canvas.getContext('2d');
 
-    // Canvas for thumbnail
-    const birdseye_thumbnail_canvas = document.getElementById('birdseye_thumbnail_canvas');
-    const birdseye_thumbnail_ctx = birdseye_thumbnail_canvas.getContext('2d');
+    //   // Canvas for thumbnail
+    //   const birdseye_thumbnail_canvas = document.getElementById('birdseye_thumbnail_canvas');
+    //   const birdseye_thumbnail_ctx = birdseye_thumbnail_canvas.getContext('2d');
 
-    // Iterate throught the shelves and draw them
-    $.each(shelves.instances, function (i) {
-      let myShelf = shelves.instances[i];
-      myShelf.draw(KilnFloor_ctx,birdseye_scale);
-      myShelf.draw(birdseye_thumbnail_ctx,1);
-    });
+    //   // Iterate throught the shelves and draw them
+    //   $.each(shelves.instances, function (i) {
+    //     let myShelf = shelves.instances[i];
+    //     myShelf.draw(KilnFloor_ctx,birdseye_scale);
+    //     myShelf.draw(birdseye_thumbnail_ctx,1);
+    //   });
+    //
+    //  
   },
   /** TODO: this description is out of date
    * Calculates the dimensions of the shelves in the kiln chamber based on the shelf length, width, and extra space.
@@ -799,7 +804,7 @@ let shelves = {
     let [shelf_length, shelf_width] = [shelves.length, shelves.width];
     const myBox = shelves.getBoundingBox();
     console.debug(`Shelves bounding box is: ${JSON.stringify(myBox)}`);
-    this.instances = [];  
+    this.instances = [];
     for (let col = 0; col < shelves.num_long; col++) {
       for (let row = 0; row < shelves.num_wide; row++) {
         let shelf_x_offset = col * (shelf_length + shelves.extra_space);
@@ -810,17 +815,16 @@ let shelves = {
           length: shelf_length,
           x_offset: shelf_x_offset,
           y_offset: shelf_y_offset,
-      //    rotated: false,
           extra_space: 1
         }));
       }
     }
-    },
+  },
 
-    getBoundingBox() {
-      // at the moment this is only setup to work with the default shelf sizes
+  getBoundingBox() {
+    // at the moment this is only setup to work with the default shelf sizes
 
-          // Need space between each shelf
+    // Need space between each shelf
     shelves.total_width = shelves.num_wide * (shelves.width + shelves.extra_space);
     shelves.total_length = shelves.num_long * (shelves.length + shelves.extra_space)
     console.debug('Shelves total width is: ' + shelves.total_width)
@@ -828,33 +832,33 @@ let shelves = {
     // Calculate the theoretical cubic footage of the shelves. 
     // Right now this calculation is not used anywhere and it appears to be wrong.
     shelves.cubic_usable = Math.round(shelves.total_length * shelves.total_width / cubic_foot * 10) / 10;
-      let boundingBox = {
-        x_min: 0,
-        y_min: 0,
-        x_max: 0,
-        y_max: 0
-      };
-      // let x_min = 0;
-      // let y_min = 0;
-      // let x_max = 0;
-      // let y_max = 0;
-      // let shelf_x_offset = 0;
-      // let shelf_y_offset = 0;
-      // let shelf_length, shelf_width;
-      // for (let col = 0; col < shelves.num_long; col++) {
-      //   for (let row = 0; row < shelves.num_wide; row++) {
-      //     shelf_x_offset = col * (shelf_length + shelves.extra_space);
-      //     shelf_y_offset = row * (shelf_width + shelves.extra_space);
-      //     x_min = Math.min(x_min, shelf_x_offset);
-      //     y_min = Math.min(y_min, shelf_y_offset);
-      //   }
-      // }
-      // boundingBox.x_min = x_min;
-      // boundingBox.y_min = y_min;
-      // boundingBox.x_max = x_max;
-      // boundingBox.y_max = y_max;
-      return boundingBox;
-    }
+    let boundingBox = {
+      x_min: 0,
+      y_min: 0,
+      x_max: 0,
+      y_max: 0
+    };
+    // let x_min = 0;
+    // let y_min = 0;
+    // let x_max = 0;
+    // let y_max = 0;
+    // let shelf_x_offset = 0;
+    // let shelf_y_offset = 0;
+    // let shelf_length, shelf_width;
+    // for (let col = 0; col < shelves.num_long; col++) {
+    //   for (let row = 0; row < shelves.num_wide; row++) {
+    //     shelf_x_offset = col * (shelf_length + shelves.extra_space);
+    //     shelf_y_offset = row * (shelf_width + shelves.extra_space);
+    //     x_min = Math.min(x_min, shelf_x_offset);
+    //     y_min = Math.min(y_min, shelf_y_offset);
+    //   }
+    // }
+    // boundingBox.x_min = x_min;
+    // boundingBox.y_min = y_min;
+    // boundingBox.x_max = x_max;
+    // boundingBox.y_max = y_max;
+    return boundingBox;
+  }
 }
 
 
@@ -893,7 +897,7 @@ class Shelf {
     this.length = local_width;
     this.width = local_length;
   }
-  
+
   /**
    * Returns a scaled version of the shelf's dimensions and offsets.
    *
@@ -903,27 +907,28 @@ class Shelf {
    * @returns {string} - The scaled dimensions and offsets.
    */
   getRectScaled(scaleFactor) {
+    scaleFactor = scaleFactor / horizantalUnit;
     let scaledValues = [
       (shelves.x_offset + this.x_offset) * scaleFactor,
-      (shelves.y_offset + this.y_offset) * scaleFactor, 
-       // FIXME: This is a hack to get around the fact that I got the width and length backwards
+      (shelves.y_offset + this.y_offset) * scaleFactor,
+      // FIXME: This is a hack to get around the fact that I got the width and length backwards
       this.length * scaleFactor,
       this.width * scaleFactor,
     ];
-    console.debug(`Scaled values are: ${JSON.stringify(scaledValues)}` )
+    console.debug(`Scaled values are: ${JSON.stringify(scaledValues)}`)
     return scaledValues;
   }
-/**
- * Draws the shelf on a canvas.
- * @method  
- * @name draw
- * @param {Object} ctx - The canvas context to draw on.
- * @param {number} scaleFactor - The scale factor to apply.
- * @returns {void}
- */
+  /**
+   * Draws the shelf on a canvas.
+   * @method  
+   * @name draw
+   * @param {Object} ctx - The canvas context to draw on.
+   * @param {number} scaleFactor - The scale factor to apply.
+   * @returns {void}
+   */
   draw(ctx, scaleFactor) {
     let myRect = this.getRectScaled(scaleFactor)
-    if (scaleFactor < 3) {  
+    if (scaleFactor < 3) {
       ctx.strokeStyle = 'none';
     } else {
       ctx.strokeStyle = 'black';
@@ -932,7 +937,7 @@ class Shelf {
     ctx.beginPath();
     // Because myRect is an array and ctx.rect expects 4 seperate arguments 
     // we need to spread it out using the spread operator
-    ctx.rect(...Object.values(myRect)) 
+    ctx.rect(...Object.values(myRect))
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
@@ -967,25 +972,26 @@ class Chamber extends KilnSection {
     // We need to fit the shelves in the chamber and make sure that
     // the total size is rounded up the nearest whole brick.
     const estimated_length = this.deadspace_front + shelves.total_length + this.deadspace_back;
-    let units_long = Math.ceil(estimated_length / horizantalUnit  );
+    let units_long = Math.ceil(estimated_length / horizantalUnit);
     if (units_long % 2 !== 0) { units_long += 1 }
-    this.length = units_long * horizantalUnit  ;
+    this.length = units_long * horizantalUnit;
 
     // Any extra space should be added to the front deadspace
     // TODO: Make the deadspace a modifiable variable 
     this.deadspace_front = 9 + this.length - estimated_length;
-    let units_wide = Math.ceil((shelves.total_width + (this.deadspace_sides * 2)) / horizantalUnit  );
+    let units_wide = Math.ceil((shelves.total_width + (this.deadspace_sides * 2)) / horizantalUnit);
     if (units_wide % 2 !== 0) { units_wide += 1 }
 
     console.debug(`Rows and columns in chamber: ${units_long}x${units_wide}`)
 
-    this.width = units_wide * horizantalUnit  ;
+    this.width = units_wide * horizantalUnit;
     // TODO: Make the chanmber height something that can be varied
     this.height = this.width;
     this.square = this.width * this.length;
     this.cubic = Math.round(this.square * this.height / cubic_foot * 10) / 10;
     this.layers = this.height / standardBrick.height;
-    console.debug(`Chamber length: ${this.length} and length of shelves: ${shelves.total_length}`)  }
+    console.debug(`Chamber length: ${this.length} and length of shelves: ${shelves.total_length}`)
+  }
 }
 class Firebox extends KilnSection {
   calculate() {
@@ -993,18 +999,20 @@ class Firebox extends KilnSection {
     firebox.height = chamber.height * 1.75;
     firebox.square = chamber.width * firebox.depth;
     firebox.cubic = Math.round(firebox.square * firebox.height / cubic_foot * 10) / 10;
-    firebox.layers = firebox.height / standardBrick.height;  }
+    firebox.layers = firebox.height / standardBrick.height;
+  }
 }
 class Chimney extends KilnSection {
   calculate() {
     chimney.depth = 2 * standardBrick.length;
-    chimney.height = chamber.height * 3;
+    chimney.height = chamber.height * 2.5;
     chimney.square = chamber.width * chimney.depth;
     chimney.cubic = (chimney.square * chimney.height / cubic_foot).toFixed(1);
     chimney.layers = chimney.height / standardBrick.height;
     chimney.ratio = chimney.square / firebox.square
     console.info(`Optimal chimney size would be ${firebox.square / 10}-${firebox.square / 7}`)
-    console.info(`Chimney ratio is ${chimney.ratio}`)  }
+    console.info(`Chimney ratio is ${chimney.ratio}`)
+  }
 }
 
 
@@ -1024,16 +1032,16 @@ class Brick {
    * @param {string} options.type - The type of the brick (default is 'Super').
    * @param {string} options.orientation - The orientation of the brick (default is 'landscape').
    */
-  constructor({ 
-    layer = kiln.numOfLayers, 
-    x = 0, 
-    y = 0, 
+  constructor({
+    layer = kiln.numOfLayers,
+    x = 0,
+    y = 0,
     width = standardBrick.width,
-    length = standardBrick.length, 
-    height = standardBrick.height, 
-    type='Super', 
-    orientation='landscape'
-  }) 
+    length = standardBrick.length,
+    height = standardBrick.height,
+    type = 'Super',
+    orientation = 'landscape'
+  })
   // The constructor above accepts an object as a parameter which allows us to pass in named parameters 
   // without having to remember the order of them. We put eah one on a new line to make it easier to read.
   {
@@ -1052,11 +1060,14 @@ class Brick {
       console.error('***unknown brick orientation***')
     }
     this.height = height;
-    this.types =  {
+    this.unit_length = this.length / horizantalUnit;
+    this.unit_width = this.width / horizantalUnit;
+    this.unit_height = this.height / verticalUnit;
+    this.types = {
       // Conductivity is "Thermal Conductivity 750°C (W/m.°K)"
-      IFB:    { color: 'WhiteSmoke', initial: 'I', cost: 2.5, conductivity: 0.3 },
-      Super:  { color: 'FireBrick',  initial: 'S', cost: 1.5, conductivity: 1 },
-      Medium: { color: 'Bisque',     initial: 'M', cost: 1,   conductivity: 1.1 }
+      IFB: { color: 'WhiteSmoke', initial: 'I', cost: 2.5, conductivity: 0.3 },
+      Super: { color: 'FireBrick', initial: 'S', cost: 1.5, conductivity: 1 },
+      Medium: { color: 'Bisque', initial: 'M', cost: 1, conductivity: 1.1 }
     }
     this.color = this.types[this.type].color;
   }
@@ -1079,30 +1090,32 @@ class Brick {
     } else { console.error(`***unknown brick type*** ${brickType}`) }
   }
 
-  drawFromTop(ctx, scale) {
+  drawFromTop(canvasObject, scale) {
     // While we are drawing we keep track of the count of types of bricks
     // to prevent double counting we only increment it if we are drawing from the top
     // and are drawing at a scale greater than 1 (i.e. we are not drawing a thumbnail)
-    let x = this.x * horizantalUnit   * scale;
-    let y = this.y * horizantalUnit   * scale;
-    let width = this.width * scale;
-    let length = this.length * scale;
 
-    // Draw the brick
-    this.draw(ctx, x, y, width, length);
+    let x = this.x;
+    let y = this.y;
+    let width = this.unit_width;
+    let length = this.unit_length;
+    console.debug(`drawFromTop: ${this.orientation} brick on layer ${this.layer} at ${x}:${y} with length width of ${length}:${width}} at scale ${scale}`)
+    // Draw the brick on the canvas
+    canvasObject.drawRect(x, y, width, length, 'gray', this.color);
 
     // If we aren't drawing a thumbnail then we need to increment the brick count
-    if (scale > 1) {this.incrementBrickCount(this.type)}
+    if (scale > 1) { this.incrementBrickCount(this.type) }
 
   }
-drawFromSide(ctx, scale) {
-  let x = this.x * horizantalUnit * scale;
-  let y = this.y * horizantalUnit   * scale;
-  let width = this.width * scale;
-  let length = this.height * scale;
-  this.draw(ctx, x, y, width, length);
-  console.log(`drawFromSide: ${this.orientation} brick on layer ${this.layer} at ${x}:${y} with length width of ${length}:${width}} at scale ${scale}`)
-}
+  drawFromSide(ctx, scale) {
+    scale = scale * verticalUnit;
+    let x = this.x * scale;
+    let y = (kiln.numOfLayers - this.layer) * scale;
+    let width = this.unit_width * scale;
+    let length = this.unit_height * scale;
+    this.draw(ctx, x, y, width, length);
+    console.debug(`drawFromSide: ${this.orientation} brick on layer ${this.layer} at ${x}:${y} with length width of ${length}:${width}} at scale ${scale}`)
+  }
 
   draw(ctx, x, y, width, length) {
 
@@ -1130,7 +1143,7 @@ class Layers {
 
     for (let col = 0; col < this.units_long;) {
       for (let row = 0; row < this.units_wide;) {
-        layer[col][row] = layer[col][row] = new Brick({ layer: kiln.numOfLayers, x: col, y: row, type: brickType, orientation: oriented});
+        layer[col][row] = layer[col][row] = new Brick({ layer: kiln.numOfLayers, x: col, y: row, type: brickType, orientation: oriented });
         row += this.calculateRowIncrement(oriented);
       }
       col += this.calculateColumnIncrement(oriented);
@@ -1153,7 +1166,7 @@ class Layers {
 
   calculateColumnIncrement(orientation) {
     return orientation === 'landscape' ? 2 : 1;
- }
+  }
 
 }
 
@@ -1192,8 +1205,7 @@ function insertBrick(layer, col, row, new_brick) {
 }
 
 function logOverlappingBrick(layer, col, row, new_brick) {
-  const currentLayer = kiln.numOfLayers + 1 // convert to 1 based index for display
-  console.debug(`Found overlapping brick at ${col}:${row} on layer ${kiln.numOfLayers}.`);
+  console.debug(`Found overlapping brick at ${col}:${row} on layer ${Layers.numOfLayers}`);
   console.debug(` -- Current Value is: ${JSON.stringify(layer[col][row])} and new value is: ${JSON.stringify(new_brick)}`);
 }
 
@@ -1212,7 +1224,7 @@ function createLayer(layer_type) {
   'use strict';
   // eslint-disable-next-line prefer-const
   let layer = new Array(kiln.units_long).fill().map(() => new Array(kiln.units_wide).fill());
-
+  console.log(`Creating layer ${kiln.numOfLayers} of type ${layer_type}`);
   console.debug('Creating right wall');
   walls.right_wall.create(layer, layer_type);
 
@@ -1224,46 +1236,50 @@ function createLayer(layer_type) {
 
   console.debug('Creating throat wall');
   walls.throat.create(layer, layer_type)
+  
+  console.debug('Creating bag wall');
+  walls.bag_wall.create(layer, layer_type)
 
   console.debug('Creating Back Wall');
   walls.back_wall.create(layer, layer_type)
 
-  console.debug('Creating bag wall');
-  walls.bag_wall.create(layer, layer_type)
 
- kiln.layers.createLayer(layer)
+
+  kiln.layers.createLayer(layer)
 }
 
 
 
-function drawBricksOnLayer(layer, ctx, scale) {
+function drawBricksOnLayer(layer, canvasObject, scale) {
   for (let col = 0; col < layer.length; col++) {
     if (layer[col]) {
       for (let row = 0; row < layer[col].length; row++) {
         if (layer[col][row]) {
           const aBrick = layer[col][row];
-          aBrick.drawFromTop(ctx, scale)
+          aBrick.drawFromTop(canvasObject, scale)
         }
       };
     }
   };
 }
 
+
+
 function drawBirdseyeView(layers) {
   $.each(layers, function (currentLayer, layer) {
     layer_num_IFBs = layer_num_mediums = layer_num_supers = 0
 
     const canvasName = 'Layer' + currentLayer;
-    const { my_canvas, my_ctx } = page.createCanvas(canvasName, 'birds_eye_area', birdseye_scale, kiln.length, kiln.width);
 
+    let theCanvas = canvasContainer.createCanvas(canvasName, 'birds_eye_area', birdseye_scale, kiln.units_long, kiln.units_wide);
+    drawBricksOnLayer(layer, theCanvas, birdseye_scale);
 
     if (currentLayer === 2) {
-      const { birdseye_thumbnail, birdseye_thumbnail_ctx } = page.createCanvas('birdseye_thumbnail', "", 1, kiln.length, kiln.width);
+      let thumbnailCanvas = canvasContainer.createCanvas('birdseye_thumbnail', 'birdseye_thumbnail_area', 4, kiln.units_long, kiln.units_wide);
+      drawBricksOnLayer(layer, thumbnailCanvas, 4);
       $('#birdseye_thumbnail_area').on('click', function () { $('#birdseye_tab_proxy').trigger('click') })
-      drawBricksOnLayer(layer, birdseye_thumbnail_ctx, 1);
+      //drawBricksOnLayer(layer, birdseye_thumbnail_ctx, 1);
     }
-
-    drawBricksOnLayer(layer, my_ctx, birdseye_scale);
 
     console.debug(`Layer ${currentLayer} IFB: ${layer_num_IFBs} Super: ${layer_num_supers} Medium: ${layer_num_mediums}`)
   });
@@ -1286,10 +1302,10 @@ function drawSideView(scale) {
   // Although we could just copy a scaled back down version of the main view to a thumbnail
   // due to all the straight lines for the bricks it looks a lot better if we draw at the right scale
 
-  const  { side_view_canvas, side_view_ctx } = page.createCanvas('side_view', '', scale, kiln.length, kiln.height);
+  const { side_view_canvas, side_view_ctx } = page.createCanvas('side_view', '', scale, kiln.length, kiln.height);
 
   // Thumbnail canvas
-  const  { side_thumbnail_canvas, side_thumbnail_ctx } = 
+  const { side_thumbnail_canvas, side_thumbnail_ctx } =
     page.createCanvas('side_thumbnail', 'side_thumbnail_area', 1, kiln.length, kiln.height);
 
   $('#side_thumbnail_area').on('click', function () { $('#sideview_tab_proxy').trigger('click') })
@@ -1300,7 +1316,7 @@ function drawSideView(scale) {
   // We draw the bricks from the top down so start with the last layer but because
   // layers are 0 indexed we need to start with 1 less than the length of the layers array
   // Note: not all of the visible bricks are in the same plane.
-  for (let currentLayer = kiln.numOfLayers-1; currentLayer > 0; currentLayer--) {
+  for (let currentLayer = kiln.numOfLayers - 1; currentLayer > 0; currentLayer--) {
     const row_num_to_draw = kiln.numOfLayers - currentLayer
     console.log('Drawing layer: ' + currentLayer)
     const layer = kiln.layers.layers[currentLayer];
@@ -1330,7 +1346,7 @@ function drawSideView(scale) {
       }
       if (aBrick.type) {
         console.debug(`DrawSideView: ${aBrick.orientation} brick on layer ${currentLayer}:${aBrick.layer} at ${col}:${row_num_to_draw} with length width of ${aBrick.length}:${aBrick.width}}`)
-        aBrick.drawFromSide(side_view_ctx, scale); 
+        aBrick.drawFromSide(side_view_ctx, scale);
         aBrick.drawFromSide(side_thumbnail_ctx, 1);
       }
     }
@@ -1358,19 +1374,95 @@ function setDebugLevel(environment) {
   }
 }
 
-class Page {
 /**
- * Reads the values of various input fields from the page and stores them in the shelves object.
- * The function checks if the shelf size is custom or not and shows or hides the appropriate input fields.
- * The values read are: whether the shelves are rotated, the shelf size, the shelf width, the shelf length, 
- *    the number of shelves wide, and the number of shelves long.
- *
- * @function
- * @name readValues
- * @returns {void}
+ * Class representing a container for multiple Canvas instances.
  */
-  readValues() {
+class CanvasContainer {
+  /**
+   * Create a CanvasContainer.
+   */
+  constructor() {
+    this.canvases = {};
+  }
 
+  /**
+   * Create a Canvas and add it to the container.
+   * @param {string} canvasName - The name of the canvas.
+   * @param {string} parent_id - The ID of the area where the canvas will be appended.
+   * @param {number} scale - The scale factor for the canvas.
+   * @param {number} width - The width of the canvas.
+   * @param {number} height - The height of the canvas.
+   */
+  createCanvas(canvasName, parent_id, scale, width, height) {
+    let canvas = new Canvas(canvasName, parent_id, scale, width, height);
+    this.canvases[canvasName] = canvas;
+    return canvas;
+
+  }
+}
+
+/**
+ * Class representing a Canvas.
+ */
+class Canvas {
+  /**
+   * Create a canvas.
+   * @param {string} canvasName - The name of the canvas.
+   * @param {string} parent_id - The ID of the area where the canvas will be appended.
+   * @param {number} scale - The scale factor for the canvas.
+   * @param {number} width - The width of the canvas.
+   * @param {number} height - The height of the canvas.
+   */
+  constructor(canvasName, parent_id, scale, width, height) {
+    this.canvasName = canvasName + '_canvas';
+    this.parent_id = parent_id;
+    this.scale = scale;
+    this.width = width;
+    this.height = height;
+    this.createCanvasElement()
+  }
+
+  createCanvasElement() {
+    console.debug('Creating canvas and ctx for: ' + this.canvasName + ' in ' + this.parent_id)
+    $('<canvas>')
+      .attr({ id: this.canvasName })
+      .appendTo(`#${this.parent_id}`)
+      .css('border', "solid 1px black");
+    $('<span>&nbsp;</span>').appendTo(`#${this.parent_id}`);
+    this.canvas = document.getElementById(this.canvasName);
+    this.ctx = this.canvas.getContext('2d');
+    this.canvas.height = this.height * this.scale;
+    this.canvas.width = this.width * this.scale;
+  }
+  drawRect(x, y, width, length, strokeStyle, fillStyle) {
+    // We don't scale the ctx because it will scale the stroke width as well as the position and size of the bricks
+    // We scale the x, y, width, and length values instead
+    x = x * this.scale;
+    y = y * this.scale;
+    width = width * this.scale;
+    length = length * this.scale;
+    console.debug(`Drawing rect on Canvas ${this.canvasName} at ${x}:${y} with length width of ${length}:${width}}`)
+    this.ctx.strokeStyle = strokeStyle;
+    this.ctx.fillStyle = fillStyle;
+    this.ctx.beginPath();
+    this.ctx.rect(x, y, width, length);
+    this.ctx.closePath();
+    this.ctx.fill();
+    this.ctx.stroke();
+  }
+}
+class Page {
+  /**
+   * Reads the values of various input fields from the page and stores them in the shelves object.
+   * The function checks if the shelf size is custom or not and shows or hides the appropriate input fields.
+   * The values read are: whether the shelves are rotated, the shelf size, the shelf width, the shelf length, 
+   *    the number of shelves wide, and the number of shelves long.
+   *
+   * @function
+   * @name readValues
+   * @returns {void}
+   */
+  readValues() {
     const shelf_size = $('#shelf_sizes option:selected').val();
     console.info('Shelf size is: ' + shelf_size)
     this.handleShelfSizeUI(shelf_size);
@@ -1383,7 +1475,7 @@ class Page {
   }
 
   handleShelfSizeUI(shelf_size) {
-    if (shelf_size !== 'Custom') { 
+    if (shelf_size !== 'Custom') {
       // If non-custom shelf size is selected then we need to 
       // hide the custom shelf size fields
       console.debug('Shelf size is not custom.');
@@ -1395,14 +1487,14 @@ class Page {
       $('.non-custom-shelf').children().show();
       $('.custom-shelf').hide();
       $('.custom-shelf').children().hide();
-    } else { 
+    } else {
       // If custom shelf size is selected then we need to  
       //  show the custom shelf size fields
       $('.non-custom-shelf').hide();
       $('.non-custom-shelf').children().hide();
       $('.custom-shelf').show();
       $('.custom-shelf').children().show();
-    }  
+    }
   }
 
   /**
@@ -1416,36 +1508,37 @@ class Page {
     $('#firebox_height').html(firebox.height);
     $('#firebox_square').html(firebox.square);
     $('#firebox_cubic').html(firebox.cubic);
-  
+
     $('#chamber_length').html(chamber.length);
     $('#chamber_width').html(chamber.width);
     $('#chamber_height').html(chamber.height);
     $('#chamber_square').html(chamber.square);
     $('#chamber_cubic').html(chamber.cubic);
-  
+
     $('#chimney_length').html(chimney.depth);
     $('#chimney_width').html(chamber.width);
     $('#chimney_height').html(chimney.height);
     $('#chimney_square').html(chamber.width * chimney.depth);
     $('#chimney_cubic').html(chimney.cubic);
-  
+
     $('#kiln_length').html(kiln.length);
     $('#kiln_width').html(kiln.width);
-  
+
     $('#num_supers').html(num_supers);
     $('#num_mediums').html(num_mediums);
-    $('#num_IFBs').html(num_IFBs);  }
+    $('#num_IFBs').html(num_IFBs);
+  }
 
-/**
- * Refreshes the page by recalculating the kiln dimensions and redrawing the kiln.
- * The function first clears the existing drawing areas and resets the brick counts.
- * It then reads the values from the page and calculates the dimensions of the kiln areas.
- * Finally, it creates the layers of the kiln and then draws them.
- *
- * @function
- * @name refreshPage
- * @returns {void}
- */
+  /**
+   * Refreshes the page by recalculating the kiln dimensions and redrawing the kiln.
+   * The function first clears the existing drawing areas and resets the brick counts.
+   * It then reads the values from the page and calculates the dimensions of the kiln areas.
+   * Finally, it creates the layers of the kiln and then draws them.
+   *
+   * @function
+   * @name refreshPage
+   * @returns {void}
+   */
   refreshPage() {
     'use strict';
     console.info('Recalculating...');
@@ -1456,11 +1549,11 @@ class Page {
     $('#birds_eye_area').empty();
     $('#birdseye_thumbnail_area').empty();
     $('#side_view_area').empty();
-    $('#side_thumbnail_area').empty();  
+    $('#side_thumbnail_area').empty();
     kiln.calculateDimensions()
     kiln.createLayers();
-    kiln.draw();  
-}
+    kiln.draw();
+  }
 
   /**
    * Initializes various elements on the page.
@@ -1478,32 +1571,31 @@ class Page {
     $('#shelf_length').on('spinstop', page.refreshPage);
     $('.custom-shelf').hide();
     $('.custom-shelf').children().hide();
-    $('#tabs').tabs();  
+    $('#tabs').tabs();
   }
-  createCanvas(canvasName, areaId, scale, width, height) {
-    // Create a canvas and add it to the area that matches the canvasName_area unless an areaId is specified
-    // If an areaId is specified then we will return the canvas and context as properties of the canvasName
+  createCanvas(canvasName, parent_id, scale, width, height) {
+    // Create a canvas and add it to the area that matches the canvasName_area unless an parent_id is specified
+    // If an parent_id is specified then we will return the canvas and context as properties of the canvasName
     // otherwise we will return the canvas and context as properties as my_canvas and my_ctx
-    if (areaId === "") {
-      areaId = canvasName + '_area'
+    if (parent_id === "") {
+      parent_id = canvasName + '_area'
     }
-    console.debug('Creating canvas and ctx for: ' + canvasName +' in ' + areaId)
+    console.debug('Creating canvas and ctx for: ' + canvasName + ' in ' + parent_id)
     let fullCanvasName = canvasName + '_canvas';
-    $('<canvas>').attr({ id: fullCanvasName }).appendTo(`#${areaId}`);
-    $('<span>&nbsp;</span>').appendTo(`#${areaId}`);
+    $('<canvas>').attr({ id: fullCanvasName }).appendTo(`#${parent_id}`).css('border', "solid 1px black");
+    $('<span>&nbsp;</span>').appendTo(`#${parent_id}`);
     const my_canvas = document.getElementById(fullCanvasName);
     const my_ctx = my_canvas.getContext('2d');
     my_canvas.height = height * scale;
     my_canvas.width = width * scale;
-    if (areaId === canvasName + '_area') {
+    if (parent_id === canvasName + '_area') {
       console.debug(`CreateCanvas returning: ${canvasName}_canvas and ${canvasName}_ctx`)
       return { [`${canvasName}_canvas`]: my_canvas, [`${canvasName}_ctx`]: my_ctx };
-    }else 
-    { // We assume that if an areaId is specified then the area is using multiple canvases with generated variables
+    } else { // We assume that if an parent_id is specified then the area is using multiple canvases with generated variables
       //  for the canvas names so we return the canvas and context as properties with a generic known names which 
       //  the calling function can map to its own variables if it wants to
       console.debug(`CreateCanvas returning: my_canvas, my_ctx`)
-  
+
       return { my_canvas, my_ctx };
     }
   }
@@ -1526,6 +1618,7 @@ function main() {
   page.refreshPage();
 }
 const page = new Page();
+let canvasContainer = new CanvasContainer();
 let kiln = new Kiln();
 let chamber = new Chamber();
 let firebox = new Firebox();
