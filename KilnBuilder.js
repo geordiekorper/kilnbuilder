@@ -37,11 +37,6 @@ const verticalUnit = standardBrick.height;
 const birdseye_scale = 18;
 const sideview_scale = 8;
 
-// Globals
-// let layers = [];
-let num_IFBs, num_supers, num_mediums;
-let layer_num_IFBs, layer_num_supers, layer_num_mediums;
-
 let walls = {
   debug(message)
   {
@@ -53,6 +48,7 @@ let walls = {
     depth: standardBrick.length,
     create(layer, layer_type) {
       walls.debug(`front_wall: layer_type:${layer_type}`)
+
       const currentLayer = kiln.numOfLayers - 2;
       const aWall = {
         layer_type: layer_type,
@@ -166,6 +162,7 @@ let walls = {
     depth: standardBrick.length,
     create(layer, layer_type) {
       walls.debug(`Right: layer_type:${layer_type}`)
+
       // We ignore the two base layers because they are not walls
       const currentLayer = kiln.numOfLayers - 2
       const aWall = {
@@ -425,7 +422,7 @@ let walls = {
   },
   create(layer, wall) {
     walls.debug(`${JSON.stringify(wall)}`);
-    console.log(`Create: layer_type:${wall.layer_type} length:${wall.units_long} offsets:${wall.y_offset}/${wall.x_offset}`)
+    console.debug(`Create: layer_type:${wall.layer_type} length:${wall.units_long} offsets:${wall.y_offset}/${wall.x_offset}`)
 
     if (wall.orientation === 'length-wise') {
       this.handleLengthwiseWall(layer, wall);
@@ -473,7 +470,7 @@ let walls = {
           real_column = col + x_offset + additional_offset;
         }
   
-        console.log(`Creating ${orientation} ${brick_orientation} ${brickType} ${kiln.numOfLayers}:${real_column}:${real_row} in walls.create-length-wise.`);
+        console.debug(`Creating ${orientation} ${brick_orientation} ${brickType} ${kiln.numOfLayers}:${real_column}:${real_row} in walls.create-length-wise.`);
         const new_brick = new Brick({ layer: kiln.numOfLayers, x: real_column, y: real_row, type: brickType, orientation: brick_orientation });
         
         new_brick.insertIntoLayer(layer);
@@ -976,7 +973,7 @@ class Brick {
    * @param {string} options.orientation - The orientation of the brick (default is 'landscape').
    */
   constructor({
-    layer = kiln.numOfLayers,
+    layerNum = kiln.numOfLayers,
     x = 0,
     y = 0,
     width = standardBrick.width,
@@ -992,7 +989,7 @@ class Brick {
     this.y = y;
     this.type = type;
     this.orientation = orientation;
-    this.layer = layer;
+    this.layerNum = layerNum;
     if (orientation === 'landscape') {
       this.width = length;
       this.length = width;
@@ -1010,29 +1007,31 @@ class Brick {
   }
   debug(message)
   {
-     let myMessage = `Brick ${this.layer}:${this.x}:${this.y} - ${message}`
+     let myMessage = `Brick ${this.layerNum}:${this.x}:${this.y} - ${message}`
      console.debug(myMessage)
   }
 
   getRefenceToSelf() {
-    myReference = kiln.layers[this.layer].bricks[this.x][this.y];
+    myReference = kiln.layers[this.layerNum].bricks[this.x][this.y];
     return myReference;
   }
   insertIntoLayer(layer) {
     this.debug(`insertIntoLayer: ${this.orientation} brick`)
     this.checkForOverlap(layer)
-    layer[this.x][this.y] = this;
+    layer.bricks[this.x][this.y] = this;
+    this.updateBrickCount(layer, 1)
   }
 
   deleteSelf(layer) {
     // only delete the brick if it actually exists
-    if (layer[this.x][this.y] instanceof Brick)  {
-      this.debug(`Deleting brick on layer ${this.layer} at ${this.x}:${this.y}`)
-      layer[this.x][this.y] = undefined;
+    if (layer.bricks[this.x][this.y] instanceof Brick)  {
+      this.debug(`Deleting brick on layer ${this.layerNum} at ${this.x}:${this.y}`)
+      layer.bricks[this.x][this.y] = undefined;
+      this.updateBrickCount(layer, -1)
     }
     else
     {
-      this.debug(`Not deleting brick on layer ${this.layer} at ${this.x}:${this.y} because it doesn't exist`)
+      this.debug(`Not deleting brick on layer ${this.layerNum} at ${this.x}:${this.y} because it doesn't exist`)
     }
   }
   checkForOverlap(layer) {
@@ -1040,7 +1039,7 @@ class Brick {
     // Note: this is normal on crosswise walls on layers where they interlace with the side walls.
 
     this.debug(`checkForOverlap: ${this.orientation} brick`)
-    let bricks = layer;
+    let bricks = layer.bricks;
     let col = this.y;
     let row = this.x;
     let overlappingBrick = {};
@@ -1075,17 +1074,16 @@ class Brick {
  * @param {Object} ctx - The 2D rendering context for the drawing surface of an HTML canvas.
  * @param {number} scale - The scale factor to apply to the drawing.
  */
-  incrementBrickCount(brickType) {
-    if (brickType === 'IFB') {
-      num_IFBs++;
-      layer_num_IFBs++;
-    } else if (brickType === 'Medium') {
-      num_mediums++;
-      layer_num_mediums++;
-    } else if (brickType === 'Super') {
-      num_supers++;
-      layer_num_supers++;
-    } else { console.error(`***unknown brick type*** ${brickType}`) }
+  updateBrickCount(layer, increment) {
+    if (this.type === 'IFB') {
+      layer.num_IFBs = layer.num_IFBs + increment;
+    } else if (this.type === 'Medium') {  
+      layer.num_mediums = layer.num_mediums + increment;
+    }
+    else if (this.type === 'Super') {
+      layer.num_supers = layer.num_supers + increment;
+    }
+    else { console.error(`***unknown brick type*** ${this.type}`) }
   }
 
   drawFromTop(canvasObject) {
@@ -1131,10 +1129,14 @@ class Brick {
 class Layers {
   constructor() {
     this.layers = [];
+    this.num_IFBs = 0;
+    this.num_supers = 0;
+    this.num_mediums = 0;
   }
   debug(message)
   {
-    // console.debug(message)
+    let myMessage = `Layers debug: ${message}`
+    // console.debug(myMessage)
   }
 
   createBaseLayer(oriented, brickType) {
@@ -1155,22 +1157,22 @@ class Layers {
   
     console.log(`Creating layer ${kiln.numOfLayers} of type ${layer_type}`);
     this.debug('Creating right wall');
-    walls.right_wall.create(layer.bricks, layer_type);
+    walls.right_wall.create(layer, layer_type);
   
     this.debug('Creating left wall');
-    walls.left_wall.create(layer.bricks, layer_type);
+    walls.left_wall.create(layer, layer_type);
   
     this.debug('Creating front wall');
-    walls.front_wall.create(layer.bricks, layer_type)
+    walls.front_wall.create(layer, layer_type)
   
     this.debug('Creating throat wall');
-    walls.throat.create(layer.bricks, layer_type)
+    walls.throat.create(layer, layer_type)
     
     this.debug('Creating bag wall');
-    walls.bag_wall.create(layer.bricks, layer_type)
+    walls.bag_wall.create(layer, layer_type)
   
     this.debug('Creating Back Wall');
-    walls.back_wall.create(layer.bricks, layer_type)
+    walls.back_wall.create(layer, layer_type)
   
     this.addLayer(layer)
   }
@@ -1178,8 +1180,10 @@ class Layers {
   addLayer(layer) {
     this.layers.push(layer);
     kiln.numOfLayers += 1;
+    this.num_IFBs += layer.num_IFBs;
+    this.num_supers += layer.num_supers;
+    this.num_mediums += layer.num_mediums;
   }
-
   initializeLayer() {
     return new Array(this.units_long).fill().map(() => new Array(this.units_wide).fill());
   }
@@ -1196,72 +1200,30 @@ class Layers {
 
 class Layer {
   constructor() {
-
     this.units_long = kiln.units_long;
     this.units_wide = kiln.units_wide;
     this.bricks = new Array(this.units_long).fill().map(() => new Array(this.units_wide).fill());
     this.layerNumber = kiln.numOfLayers;
+    this.num_IFBs = 0;
+    this.num_supers = 0;
+    this.num_mediums = 0;
   }
 
   debug(message)
   {
-    myMessage = `Layer ${this.layerNumber} debug: ${message}`
+    let myMessage = `Layer ${this.layerNumber} debug: ${message}`
     console.debug(myMessage)
   }
 
-  logOverlappingBrick(col, row, new_brick) {
-    this.debug(`Found overlapping brick at ${col}:${row} on layer ${this.layerNumber}`);
-    this.debug(` -- Current Value is: ${JSON.stringify(this.layer[col][row])} and new value is: ${JSON.stringify(new_brick)}`);
-  }
-
-  deleteBrick(col, row) {
+  deleteBrick(col, row) { // This function is not used anywhere but it might be useful in the future
     this.debug(`Deleting brick at ${col}:${row} on layer ${this.layerNumber}`);
     if (this.bricks[col][row]) {
-      this.bricks[col][row] = undefined;
+      this.bricks[col][row].deleteSelf(this);
     } else {
       console.error(`!!! No brick found at ${col}:${row} on layer ${this.layerNumber}`);
     }
   }
 }
-
-/**
- * Creates a new layer of bricks for the kiln and adds that new layer to the layers array. 
- * The new layer is initialized as a 2D array with dimensions based on the kiln's units_long and units_wide properties.
- * The create method of each wall tpe in the walls object is then called with the new layer and the specified layer_type as arguments.
- *
- * @function
- * @name createLayerForWalls
- * @param {string} layer_type - The type of layer to create. This argument is passed to the create method of each wall.
- * @global
- * @returns {void}
- */
-function createLayerForWalls(layer_type) {
-  'use strict';
-  let layer = new Layer();
-
-  console.log(`Creating layer ${kiln.numOfLayers} of type ${layer_type}`);
-  console.debug('Creating right wall');
-  walls.right_wall.create(layer.bricks, layer_type);
-
-  console.debug('Creating left wall');
-  walls.left_wall.create(layer.bricks, layer_type);
-
-  console.debug('Creating front wall');
-  walls.front_wall.create(layer.bricks, layer_type)
-
-  console.debug('Creating throat wall');
-  walls.throat.create(layer.bricks, layer_type)
-  
-  console.debug('Creating bag wall');
-  walls.bag_wall.create(layer.bricks, layer_type)
-
-  console.debug('Creating Back Wall');
-  walls.back_wall.create(layer.bricks, layer_type)
-
-  kiln.layers.addLayer(layer)
-}
-
-
 
 function drawBricksOnLayer(layer, canvasObject, scale) {
   for (let col = 0; col < layer.length; col++) {
@@ -1542,9 +1504,9 @@ class Page {
     $('#kiln_length').html(kiln.length);
     $('#kiln_width').html(kiln.width);
 
-    $('#num_supers').html(num_supers);
-    $('#num_mediums').html(num_mediums);
-    $('#num_IFBs').html(num_IFBs);
+    $('#num_supers').html(kiln.layers.num_supers);
+    $('#num_mediums').html(kiln.layers.num_mediums);
+    $('#num_IFBs').html(kiln.layers.num_IFBs);
   }
 
   /**
@@ -1562,7 +1524,6 @@ class Page {
     console.info('Recalculating...');
     // Reset variables
     // kiln.layers = [];
-    num_IFBs = num_mediums = num_supers = 0
     // Clear the drawing areas before we start
     $('#birds_eye_area').empty();
     $('#birdseye_thumbnail_area').empty();
