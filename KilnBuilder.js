@@ -41,7 +41,7 @@ let walls = {
   debug(message)
   {
      let myMessage = `Walls - ${message}`
-     console.debug(myMessage)
+     // console.debug(myMessage)
   },
   front_wall: {
     col: 0,
@@ -97,7 +97,7 @@ let walls = {
           ['Super', 'internal']
         ]
       }
-      console.debug(`walls.left_wall.create --- currentLayer:${currentLayer} layer_type:${layer_type} length:${aWall.units_long} offsets:${aWall.y_offset}/${aWall.x_offset}`)
+      walls.debug(`walls.left_wall.create --- currentLayer:${currentLayer} layer_type:${layer_type} length:${aWall.units_long} offsets:${aWall.y_offset}/${aWall.x_offset}`)
 
       if (aWall.layer_type === 'header') {
         // Header rows only need one brick so we override that.
@@ -113,9 +113,9 @@ let walls = {
       if (currentLayer < chamber.layers) {
         // Create a full length wall
         walls.create(layer, aWall)
-        console.debug('Creating left hand wall below chamber height.')
+        walls.debug('Creating left hand wall below chamber height.')
       } else if (currentLayer < firebox.layers) {
-        console.debug('Creating left hand wall below firebox height.');
+        walls.debug('Creating left hand wall below firebox height.');
 
         // Create along firebox
         if (aWall.layer_type === 'header') {
@@ -144,7 +144,7 @@ let walls = {
         if (aWall.layer_type === 'header') {
           aWall.layer_type = 'even'
         }
-        console.debug('Creating left hand wall above firebox height.');
+        walls.debug('Creating left hand wall above firebox height.');
         aWall.y_offset = 1;
         aWall.units_long = chimney.depth / horizantalUnit + 3
         aWall.x_offset = kiln.units_long - aWall.units_long - 1
@@ -191,9 +191,9 @@ let walls = {
       if (currentLayer < chamber.layers) {
         // Create a full length wall
         walls.create(layer, aWall)
-        console.debug('Creating right hand wall below chamber height.');
+        walls.debug('Creating right hand wall below chamber height.');
       } else if (currentLayer < firebox.layers) {
-        console.debug('Creating right hand wall below firebox height.');
+        walls.debug('Creating right hand wall below firebox height.');
 
         // Create along firebox
         if (aWall.layer_type === 'header') {
@@ -220,7 +220,7 @@ let walls = {
         if (aWall.layer_type === 'header') {
           aWall.layer_type = 'even'
         }
-        console.debug('Creating right hand wall above firebox height.');
+        walls.debug('Creating right hand wall above firebox height.');
 
         aWall.units_long = chimney.depth / horizantalUnit + 3
         aWall.x_offset = kiln.units_long - aWall.units_long - 1
@@ -422,7 +422,7 @@ let walls = {
   },
   create(layer, wall) {
     walls.debug(`${JSON.stringify(wall)}`);
-    console.debug(`Create: layer_type:${wall.layer_type} length:${wall.units_long} offsets:${wall.y_offset}/${wall.x_offset}`)
+    walls.debug(`Create: layer_type:${wall.layer_type} length:${wall.units_long} offsets:${wall.y_offset}/${wall.x_offset}`)
 
     if (wall.orientation === 'length-wise') {
       this.handleLengthwiseWall(layer, wall);
@@ -470,7 +470,7 @@ let walls = {
           real_column = col + x_offset + additional_offset;
         }
   
-        console.debug(`Creating ${orientation} ${brick_orientation} ${brickType} ${kiln.numOfLayers}:${real_column}:${real_row} in walls.create-length-wise.`);
+        walls.debug(`Creating ${orientation} ${brick_orientation} ${brickType} ${kiln.numOfLayers}:${real_column}:${real_row} in walls.create-length-wise.`);
         const new_brick = new Brick({ layer: kiln.numOfLayers, x: real_column, y: real_row, type: brickType, orientation: brick_orientation });
         
         new_brick.insertIntoLayer(layer);
@@ -541,7 +541,7 @@ class Kiln {
 
   debug(message)
   {
-     let myMessage = "Kiln Object debug: " + message
+     let myMessage = "Kiln Object: " + message
     // this.debug(myMessage)
   }
 
@@ -614,7 +614,7 @@ class Kiln {
    * @returns {void}
    */
   draw() {
-    drawSideView(sideview_scale);
+    // drawSideView(sideview_scale);
     drawBirdseyeView(this.layers.layers);
     shelves.draw();
     page.updateElements();
@@ -638,8 +638,7 @@ let shelves = {
 
   debug(message)
   {
-     let myMessage = "Shelves debug: " + message
-    // console.debug(myMessage)
+     // console.debug("Shelves: " + message)
   },
 
   rotateDefaultSizes() {
@@ -701,24 +700,22 @@ let shelves = {
    * @returns {void}
    */
   draw() {
-    //   // Center shelves in chamber
-    //   this.updateShelvesOffset();
-    //   // Canvas for main view
-    //   const KilnFloor_canvas = document.getElementById('Layer2_canvas');
-    //   const KilnFloor_ctx = KilnFloor_canvas.getContext('2d');
+    const shelf_Layer = 'Layer2';
+    const thumbnail_name = 'birdseye_thumbnail';
+    // Center shelves in chamber
+    this.updateShelvesOffset();
+    shelves.debug(`Shelves 'draw' function started`);
+    // Get the canvas contexts for the birdseye view and the thumbnail
+    const myCanvas = canvasContainer.getCanvas(shelf_Layer);
+    const myThumbnail = canvasContainer.getCanvas(thumbnail_name);
 
-    //   // Canvas for thumbnail
-    //   const birdseye_thumbnail_canvas = document.getElementById('birdseye_thumbnail_canvas');
-    //   const birdseye_thumbnail_ctx = birdseye_thumbnail_canvas.getContext('2d');
-
-    //   // Iterate throught the shelves and draw them
-    //   $.each(shelves.instances, function (i) {
-    //     let myShelf = shelves.instances[i];
-    //     myShelf.draw(KilnFloor_ctx,birdseye_scale);
-    //     myShelf.draw(birdseye_thumbnail_ctx,1);
-    //   });
-    //
-    //  
+    // Iterate throught the shelves and draw them
+    $.each(shelves.instances, function (i) {
+      shelves.debug(`Drawing shelf ${i}`);
+      let myShelf = shelves.instances[i];
+      myShelf.draw(myCanvas);
+      myShelf.draw(myThumbnail);
+    });
   },
   /** TODO: this description is out of date
    * Calculates the dimensions of the shelves in the kiln chamber based on the shelf length, width, and extra space.
@@ -821,9 +818,9 @@ class Shelf {
 
   debug(message)
   {
-     let myMessage = "Shelf debug: " + message
-    // console.debug(myMessage)
+     //console.debug(`${this.constructor.name}: ${message}`)
   }
+
   /**
    * Rotates the shelf by swapping its length and width.
    */
@@ -858,25 +855,19 @@ class Shelf {
    * Draws the shelf on a canvas.
    * @method  
    * @name draw
-   * @param {Object} ctx - The canvas context to draw on.
-   * @param {number} scaleFactor - The scale factor to apply.
+   * @param {Object} canvasObject - The canvas objet to draw on.
    * @returns {void}
    */
-  draw(ctx, scaleFactor) {
-    let myRect = this.getRectScaled(scaleFactor)
-    if (scaleFactor < 3) {
-      ctx.strokeStyle = 'none';
-    } else {
-      ctx.strokeStyle = 'black';
-    }
-    ctx.fillStyle = 'gray';
-    ctx.beginPath();
-    // Because myRect is an array and ctx.rect expects 4 seperate arguments 
-    // we need to spread it out using the spread operator
-    ctx.rect(...Object.values(myRect))
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+  draw(canvasObject) {
+    this.debug(`Drawing shelf ${this.x_offset + shelves.x_offset}x${this.y_offset + shelves.y_offset}x${this.width}x${this.length} on canvasObject: ${canvasObject.canvasName}`)
+    canvasObject.drawRect(
+      (shelves.x_offset + this.x_offset) / horizantalUnit, 
+      (shelves.y_offset + this.y_offset) / horizantalUnit, 
+      this.length / horizantalUnit, 
+      this.width / horizantalUnit,
+      'black', 
+      'gray');
+
   }
 }
 
@@ -905,7 +896,7 @@ class Chamber extends KilnSection {
   }
   debug(message)
   {
-     let myMessage = "Chamber object debug: " + message
+     let myMessage = "Chamber object: " + message
     // console.debug(myMessage)
   }
   calculate() {
@@ -1007,8 +998,7 @@ class Brick {
   }
   debug(message)
   {
-     let myMessage = `Brick ${this.layerNum}:${this.x}:${this.y} - ${message}`
-     console.debug(myMessage)
+    // console.debug(`${this.constructor.name}: ${message}`)
   }
 
   getRefenceToSelf() {
@@ -1087,22 +1077,13 @@ class Brick {
   }
 
   drawFromTop(canvasObject) {
-    // While we are drawing we keep track of the count of types of bricks
-    // to prevent double counting we only increment it if we are drawing from the top
-    // and are drawing at a scale greater than 1 (i.e. we are not drawing a thumbnail)
-
     let x = this.x;
     let y = this.y;
     let width = this.unit_width;
     let length = this.unit_length;
-    // this.debug(`drawFromTop: ${this.orientation} brick on layer ${this.layer} at ${x}:${y} with length width of ${length}:${width}`)
+
     // Draw the brick on the canvas
     canvasObject.drawRect(x, y, width, length, 'gray', this.color);
-
-    // If we aren't drawing a thumbnail then we need to increment the brick count
-    // TODO: Move this to a separate function
-    // if (scale > 1) { this.incrementBrickCount(this.type) }
-
   }
   drawFromSide(ctx, scale) {
     scale = scale * verticalUnit;
@@ -1135,8 +1116,7 @@ class Layers {
   }
   debug(message)
   {
-    let myMessage = `Layers debug: ${message}`
-    // console.debug(myMessage)
+    // console.debug(`${this.constructor.name}: ${message}`)
   }
 
   createBaseLayer(oriented, brickType) {
@@ -1155,7 +1135,7 @@ class Layers {
     'use strict';
     let layer = new Layer();
   
-    console.log(`Creating layer ${kiln.numOfLayers} of type ${layer_type}`);
+    this.debug(`Creating layer ${kiln.numOfLayers} of type ${layer_type}`);
     this.debug('Creating right wall');
     walls.right_wall.create(layer, layer_type);
   
@@ -1211,8 +1191,7 @@ class Layer {
 
   debug(message)
   {
-    let myMessage = `Layer ${this.layerNumber} debug: ${message}`
-    console.debug(myMessage)
+    // console.debug(`${this.constructor.name}: ${message}`)
   }
 
   deleteBrick(col, row) { // This function is not used anywhere but it might be useful in the future
@@ -1225,7 +1204,7 @@ class Layer {
   }
 }
 
-function drawBricksOnLayer(layer, canvasObject, scale) {
+function drawBricksOnLayer(layer, canvasObject) {
   for (let col = 0; col < layer.length; col++) {
     if (layer[col]) {
       for (let row = 0; row < layer[col].length; row++) {
@@ -1242,21 +1221,15 @@ function drawBricksOnLayer(layer, canvasObject, scale) {
 
 function drawBirdseyeView(layers) {
   $.each(layers, function (currentLayer, layer) {
-    layer_num_IFBs = layer_num_mediums = layer_num_supers = 0
-
     const canvasName = 'Layer' + currentLayer;
-
-    let theCanvas = canvasContainer.createCanvas(canvasName, 'birds_eye_area', birdseye_scale, kiln.units_long, kiln.units_wide);
-    drawBricksOnLayer(layer.bricks, theCanvas, birdseye_scale);
+    let theCanvas = canvasContainer.createCanvas(canvasName, 'birdseye_area', birdseye_scale, kiln.units_long, kiln.units_wide);
+    drawBricksOnLayer(layer.bricks, theCanvas);
 
     if (currentLayer === 2) {
       let thumbnailCanvas = canvasContainer.createCanvas('birdseye_thumbnail', 'birdseye_thumbnail_area', 4, kiln.units_long, kiln.units_wide);
-      drawBricksOnLayer(layer.bricks, thumbnailCanvas, 4);
+      drawBricksOnLayer(layer.bricks, thumbnailCanvas);
       $('#birdseye_thumbnail_area').on('click', function () { $('#birdseye_tab_proxy').trigger('click') })
-      //drawBricksOnLayer(layer, birdseye_thumbnail_ctx, 1);
     }
-
-    console.debug(`Layer ${currentLayer} IFB: ${layer_num_IFBs} Super: ${layer_num_supers} Medium: ${layer_num_mediums}`)
   });
 }
 
@@ -1274,64 +1247,59 @@ function drawBirdseyeView(layers) {
 function drawSideView(scale) {
   // Iterate through the layers and draw the visible bricks
   // For the side view we draw on 2 canvases one for the scaled up view and one for a thumbnail.
-  // Although we could just copy a scaled back down version of the main view to a thumbnail
-  // due to all the straight lines for the bricks it looks a lot better if we draw at the right scale
+//   // Although we could just copy a scaled back down version of the main view to a thumbnail
+//   // due to all the straight lines for the bricks it looks a lot better if we draw at the right scale
 
-  const { side_view_canvas, side_view_ctx } = page.createCanvas('side_view', '', scale, kiln.length, kiln.height);
+//  //  const { side_view_canvas, side_view_ctx } = page.createCanvas('side_view', '', scale, kiln.length, kiln.height);
 
-  // Thumbnail canvas
-  const { side_thumbnail_canvas, side_thumbnail_ctx } =
-    page.createCanvas('side_thumbnail', 'side_thumbnail_area', 1, kiln.length, kiln.height);
+//   // Thumbnail canvas
+//   //const { side_thumbnail_canvas, side_thumbnail_ctx } =
+//     //page.createCanvas('side_thumbnail', 'side_thumbnail_area', 1, kiln.length, kiln.height);
 
-  $('#side_thumbnail_area').on('click', function () { $('#sideview_tab_proxy').trigger('click') })
+//   // $('#side_thumbnail_area').on('click', function () { $('#sideview_tab_proxy').trigger('click') })
 
-  console.log('Drawing layers!')
+//   console.log('Drawing layers!')
 
-  // Draw the bricks on the layer.
-  // We draw the bricks from the top down so start with the last layer but because
-  // layers are 0 indexed we need to start with 1 less than the length of the layers array
-  // Note: not all of the visible bricks are in the same plane.
-  for (let currentLayer = kiln.numOfLayers - 1; currentLayer > 0; currentLayer--) {
-    const row_num_to_draw = kiln.numOfLayers - currentLayer
-    console.log('Drawing layer: ' + currentLayer)
-    const layer = kiln.layers.layers[currentLayer];
-    for (let col = 0; col < layer.length; col++) {
-      const outer_row = layer[col].length - 1
-      console.debug('Drawing column: ' + col + ' row: ' + outer_row)
-      let aBrick = {};
-      if (layer[col][outer_row]) {
-        // There is a brick in the outer row
-        aBrick = layer[col][outer_row];
-      } else if (col === 0) {
-        if (layer[col][(outer_row - 1)]) {
-          // We are in the first column and there is a brick in the row behind the outer row
-          aBrick = layer[col][(outer_row - 1)];
-        }
-      } else if (layer[(col - 1)][outer_row]) {
-        // There is a brick in the col next to this one so we don't need to do anything.
-      } else if (layer[(col)][(outer_row - 1)]) {
-        // We are in the chimney and there is a brick in the row one behind the outer row
-        aBrick = layer[(col)][(outer_row - 1)];
-      } else if (layer[(col)][(outer_row - 2)]) {
-        // There is a brick in the row 2 behind the outer row because of interlacing
-        aBrick = layer[(col)][(outer_row - 2)];
-      } else {
-        // This probably means that there is not supposed to be a brick here.
-        // console.debug('There is no brick to be found.')
-      }
-      if (aBrick.type) {
-        console.debug(`DrawSideView: ${aBrick.orientation} brick on layer ${currentLayer}:${aBrick.layer} at ${col}:${row_num_to_draw} with length width of ${aBrick.length}:${aBrick.width}}`)
-        aBrick.drawFromSide(side_view_ctx, scale);
-        aBrick.drawFromSide(side_thumbnail_ctx, 1);
-      }
-    }
-  };
-}
-
-
-
-
-
+//   // Draw the bricks on the layer.
+//   // We draw the bricks from the top down so start with the last layer but because
+//   // layers are 0 indexed we need to start with 1 less than the length of the layers array
+//   // Note: not all of the visible bricks are in the same plane.
+//   for (let currentLayer = kiln.numOfLayers - 1; currentLayer > 0; currentLayer--) {
+//     const row_num_to_draw = kiln.numOfLayers - currentLayer
+//     console.debug('Drawing layer: ' + currentLayer)
+//     const layer = kiln.layers.layers[currentLayer];
+//     for (let col = 0; col < layer.length; col++) {
+//       const outer_row = layer[col].length - 1
+//       console.debug('Drawing column: ' + col + ' row: ' + outer_row)
+//       let aBrick = {};
+//       if (layer[col][outer_row]) {
+//         // There is a brick in the outer row
+//         aBrick = layer[col][outer_row];
+//       } else if (col === 0) {
+//         if (layer[col][(outer_row - 1)]) {
+//           // We are in the first column and there is a brick in the row behind the outer row
+//           aBrick = layer[col][(outer_row - 1)];
+//         }
+//       } else if (layer[(col - 1)][outer_row]) {
+//         // There is a brick in the col next to this one so we don't need to do anything.
+//       } else if (layer[(col)][(outer_row - 1)]) {
+//         // We are in the chimney and there is a brick in the row one behind the outer row
+//         aBrick = layer[(col)][(outer_row - 1)];
+//       } else if (layer[(col)][(outer_row - 2)]) {
+//         // There is a brick in the row 2 behind the outer row because of interlacing
+//         aBrick = layer[(col)][(outer_row - 2)];
+//       } else {
+//         // This probably means that there is not supposed to be a brick here.
+//         // console.debug('There is no brick to be found.')
+//       }
+//       if (aBrick.type) {
+//         console.debug(`DrawSideView: ${aBrick.orientation} brick on layer ${currentLayer}:${aBrick.layer} at ${col}:${row_num_to_draw} with length width of ${aBrick.length}:${aBrick.width}}`)
+//         aBrick.drawFromSide(side_view_ctx, scale);
+//         aBrick.drawFromSide(side_thumbnail_ctx, 1);
+//       }
+//     }
+//   };
+ }
 
 env = 'development';
 
@@ -1359,7 +1327,10 @@ class CanvasContainer {
   constructor() {
     this.canvases = {};
   }
-
+  debug(message)
+  {
+    // console.debug(`${this.constructor.name}: ${message}`)
+  }
   /**
    * Create a Canvas and add it to the container.
    * @param {string} canvasName - The name of the canvas.
@@ -1368,11 +1339,20 @@ class CanvasContainer {
    * @param {number} width - The width of the canvas.
    * @param {number} height - The height of the canvas.
    */
+
   createCanvas(canvasName, parent_id, scale, width, height) {
+    // TODO: check if the canvas already exists and if so return it instead of creating a new one
+    // TODO: check if parent_id exists before trying to append to it
+    this.debug('Creating canvas: ' + canvasName + ' in ' + parent_id + ' with scale: ' + scale + ' width: ' + width + ' height: ' + height)
     let canvas = new Canvas(canvasName, parent_id, scale, width, height);
     this.canvases[canvasName] = canvas;
     return canvas;
-
+  }
+  getCanvas(canvasName) {
+    return this.canvases[canvasName];
+  }
+  getCtx(canvasName) {
+    return this.canvases[canvasName].ctx;
   }
 }
 
@@ -1394,13 +1374,13 @@ class Canvas {
     this.scale = scale;
     this.width = width;
     this.height = height;
+    this.debug('Creating canvas: ' + this.canvasName + ' in ' + this.parent_id + ' with scale: ' + this.scale + ' width: ' + this.width + ' height: ' + this.height)
     this.createCanvasElement()
   }
   
   debug(message)
   {
-     let myMessage = "Canvas debug: " + message
-    // console.debug(myMessage)
+     //console.debug(`${this.constructor.name}: ${message}`)
   }
   createCanvasElement() {
     this.debug('Creating canvas and ctx for: ' + this.canvasName + ' in ' + this.parent_id)
@@ -1421,7 +1401,7 @@ class Canvas {
     y = y * this.scale;
     width = width * this.scale;
     length = length * this.scale;
-    //console.debug(`Drawing rect on Canvas ${this.canvasName} at ${x}:${y} with length width of ${length}:${width}}`)
+    this.debug(`Drawing rect on Canvas ${this.canvasName} at ${x}:${y} with length width of ${length}:${width}}`)
     this.ctx.strokeStyle = strokeStyle;
     this.ctx.fillStyle = fillStyle;
     this.ctx.beginPath();
@@ -1525,7 +1505,7 @@ class Page {
     // Reset variables
     // kiln.layers = [];
     // Clear the drawing areas before we start
-    $('#birds_eye_area').empty();
+    $('#birdseye_area').empty();
     $('#birdseye_thumbnail_area').empty();
     $('#side_view_area').empty();
     $('#side_thumbnail_area').empty();
@@ -1552,32 +1532,32 @@ class Page {
     $('.custom-shelf').children().hide();
     $('#tabs').tabs();
   }
-  createCanvas(canvasName, parent_id, scale, width, height) {
-    // Create a canvas and add it to the area that matches the canvasName_area unless an parent_id is specified
-    // If an parent_id is specified then we will return the canvas and context as properties of the canvasName
-    // otherwise we will return the canvas and context as properties as my_canvas and my_ctx
-    if (parent_id === "") {
-      parent_id = canvasName + '_area'
-    }
-    console.debug('Creating canvas and ctx for: ' + canvasName + ' in ' + parent_id)
-    let fullCanvasName = canvasName + '_canvas';
-    $('<canvas>').attr({ id: fullCanvasName }).appendTo(`#${parent_id}`).css('border', "solid 1px black");
-    $('<span>&nbsp;</span>').appendTo(`#${parent_id}`);
-    const my_canvas = document.getElementById(fullCanvasName);
-    const my_ctx = my_canvas.getContext('2d');
-    my_canvas.height = height * scale;
-    my_canvas.width = width * scale;
-    if (parent_id === canvasName + '_area') {
-      console.debug(`CreateCanvas returning: ${canvasName}_canvas and ${canvasName}_ctx`)
-      return { [`${canvasName}_canvas`]: my_canvas, [`${canvasName}_ctx`]: my_ctx };
-    } else { // We assume that if an parent_id is specified then the area is using multiple canvases with generated variables
-      //  for the canvas names so we return the canvas and context as properties with a generic known names which 
-      //  the calling function can map to its own variables if it wants to
-      console.debug(`CreateCanvas returning: my_canvas, my_ctx`)
+  // createCanvas(canvasName, parent_id, scale, width, height) {
+  //   // Create a canvas and add it to the area that matches the canvasName_area unless an parent_id is specified
+  //   // If an parent_id is specified then we will return the canvas and context as properties of the canvasName
+  //   // otherwise we will return the canvas and context as properties as my_canvas and my_ctx
+  //   if (parent_id === "") {
+  //     parent_id = canvasName + '_area'
+  //   }
+  //   console.debug('Creating canvas and ctx for: ' + canvasName + ' in ' + parent_id)
+  //   let fullCanvasName = canvasName + '_canvas';
+  //   $('<canvas>').attr({ id: fullCanvasName }).appendTo(`#${parent_id}`).css('border', "solid 1px black");
+  //   $('<span>&nbsp;</span>').appendTo(`#${parent_id}`);
+  //   const my_canvas = document.getElementById(fullCanvasName);
+  //   const my_ctx = my_canvas.getContext('2d');
+  //   my_canvas.height = height * scale;
+  //   my_canvas.width = width * scale;
+  //   if (parent_id === canvasName + '_area') {
+  //     console.debug(`CreateCanvas returning: ${canvasName}_canvas and ${canvasName}_ctx`)
+  //     return { [`${canvasName}_canvas`]: my_canvas, [`${canvasName}_ctx`]: my_ctx };
+  //   } else { // We assume that if an parent_id is specified then the area is using multiple canvases with generated variables
+  //     //  for the canvas names so we return the canvas and context as properties with a generic known names which 
+  //     //  the calling function can map to its own variables if it wants to
+  //     console.debug(`CreateCanvas returning: my_canvas, my_ctx`)
 
-      return { my_canvas, my_ctx };
-    }
-  }
+  //     return { my_canvas, my_ctx };
+  //   }
+  // }
 }
 
 function getScaledRect(x, y, width, length, scale) {
