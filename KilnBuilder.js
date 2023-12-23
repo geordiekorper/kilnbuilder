@@ -34,9 +34,71 @@ const horizantalUnit = standardBrick.width;
 const verticalUnit = standardBrick.height;
 
 // Scale
-const birdseye_scale = 18;
+const birdseye_scale = 36;
 const sideview_scale = 18;
 const thumbnail_scale = 8;
+
+
+
+class Wall {
+  constructor() {
+    // common properties
+    this.depth = 0;
+    this.height = 0;
+    this.square = 0;
+    this.cubic = 0;
+    this.layers = 0;
+  }
+
+  calculate() {
+    // common calculations
+    this.square = this.width * this.depth;
+    this.cubic = Math.round(this.square * this.height / cubic_foot * 10) / 10;
+    this.layers = this.height / standardBrick.height;
+  }
+}
+
+
+class FrontWall {
+  constructor() {
+    this.col = 0;
+    this.depth = standardBrick.length;
+  }
+
+  create(layer, layer_type) {
+    walls.debug(`front_wall: layer_type:${layer_type}`)
+    const aWall = {
+      layer_type: layer_type,
+      orientation: 'cross-wise',
+      units_long: kiln.units_wide,
+      x_offset: 0,
+      y_offset: 0,
+      brick_courses: [
+        ['Medium', 'external'],
+        ['Super', 'internal']
+      ]
+    };
+
+    // TODO: Clean this up to be more self-explanatory
+    if (layer_type === 'header') {
+      // Header rows only need one brick so we override that.
+      aWall.brick_courses = [
+        ['Super', 'external']
+      ];
+      aWall.y_offset -= 1;
+    }
+    // The front wall is pretty simple because it is as high as the firebox and 
+    // only interacts with the side wall
+    if (layer.belowFirebox) {
+      walls.create(layer, aWall)
+    } else {
+      // Don't need to do anything.
+    }
+  }
+}
+
+
+
 
 /**
  * Represents the walls of a kiln.
@@ -44,392 +106,13 @@ const thumbnail_scale = 8;
  */
 let walls = {
   debug(message) {
-let debugOn = false;
-
-    if (debugOn) {
-      console.debug(`${this.constructor.name}: ${message}`);
-    }
-  },
-  front_wall: {
-    col: 0,
-    depth: standardBrick.length,
-    create(layer, layer_type) {
-      walls.debug(`front_wall: layer_type:${layer_type}`)
-
-      const currentLayer = kiln.numOfLayers - 2;
-      const aWall = {
-        layer_type: layer_type,
-        orientation: 'cross-wise',
-        units_long: kiln.units_wide,
-        x_offset: 0,
-        y_offset: 0,
-        brick_courses: [
-          ['Medium', 'external'],
-          ['Super', 'internal']
-        ]
-      };
-
-      // TODO: Clean this up to be more self-explanatory
-      if (layer_type === 'header') {
-        // Header rows only need one brick so we override that.
-        aWall.brick_courses = [
-          ['Super', 'external']
-        ];
-        aWall.y_offset -= 1;
-      }
-      // The front wall is pretty simple because it is as high as the firebox and 
-      // only interacts with the side wall
-      if (currentLayer < firebox.layers) {
-        walls.create(layer, aWall)
-      } else {
-        // Don't need to do anything.
-      }
-    }
-  },
-  left_wall: {
-
-    col: 0, // Where the wall starts on the left
-    depth: standardBrick.length,
-    create(layer, layer_type) {
-      walls.debug(`Left: layer_type:${layer_type}`)
-      const currentLayer = kiln.numOfLayers - 2
-      const aWall = {
-        layer_type: layer_type,
-        orientation: 'length-wise',
-        units_long: kiln.units_long,
-        x_offset: 0,
-        y_offset: 0,
-        brick_courses: [
-          ['IFB', 'external'],
-          ['Super', 'internal']
-        ]
-      }
-      walls.debug(`walls.left_wall.create --- currentLayer:${currentLayer} layer_type:${layer_type} length:${aWall.units_long} offsets:${aWall.y_offset}/${aWall.x_offset}`)
-
-      if (aWall.layer_type === 'header') {
-        // Header rows only need one brick so we override that.
-        // We also shorten the row and offset 
-        // this is because the front and back rows go the whole width of the kiln
-        aWall.brick_courses = [
-          ['Super', 'external']
-        ];
-        aWall.x_offset = 2;
-        aWall.units_long = kiln.units_long - 4;
-      }
-
-      if (currentLayer < chamber.layers) {
-        // Create a full length wall
-        walls.create(layer, aWall)
-        walls.debug('Creating left hand wall below chamber height.')
-      } else if (currentLayer < firebox.layers) {
-        walls.debug('Creating left hand wall below firebox height.');
-
-        // Create along firebox
-        if (aWall.layer_type === 'header') {
-          aWall.units_long = walls.throat.col
-        } else {
-          aWall.units_long = walls.throat.col + 2
-        }
-        walls.create(layer, aWall);
-
-        // Create along chimney
-        aWall.units_long = chimney.depth / horizantalUnit + 3
-        aWall.y_offset = 1;
-        aWall.x_offset = kiln.units_long - aWall.units_long - 1
-        aWall.brick_courses = [
-          ['Medium', 'internal']
-        ]
-
-        if (aWall.layer_type === 'header') {
-          // The chimney does not have header rows above the chamber height because it is only 1 brick thick.
-          aWall.layer_type = 'even'
-        }
-        walls.create(layer, aWall)
-      } else if (currentLayer > firebox.layers) {
-        // If we are above the height of the firebox then it is chimney only
-        // there are no header rows there and it is only a single brick thick
-        if (aWall.layer_type === 'header') {
-          aWall.layer_type = 'even'
-        }
-        walls.debug('Creating left hand wall above firebox height.');
-        aWall.y_offset = 1;
-        aWall.units_long = chimney.depth / horizantalUnit + 3
-        aWall.x_offset = kiln.units_long - aWall.units_long - 1
-        aWall.brick_courses = [
-          ['Medium', 'internal']
-        ]
-        walls.create(layer, aWall)
-      } else {
-        console.error('Something is broken in the left_wall function')
-      }
-    }
-  },
-  right_wall: {
-    col: 0,
-    depth: standardBrick.length,
-    create(layer, layer_type) {
-      walls.debug(`Right: layer_type:${layer_type}`)
-
-      // We ignore the two base layers because they are not walls
-      const currentLayer = kiln.numOfLayers - 2
-      const aWall = {
-        layer_type: layer_type,
-        orientation: 'length-wise',
-        units_long: kiln.units_long,
-        x_offset: 0,
-        y_offset: kiln.units_wide - 2,
-        brick_courses: [
-          ['Super', 'internal'],
-          ['IFB', 'external']
-        ]
-      }
-
-      if (aWall.layer_type === 'header') {
-        // Header rows only need one brick so we override that.
-        // We also shorten the row and offset it because
-        // the front and back rows go the whole width of the kiln
-        aWall.brick_courses = [
-          ['Super', 'external']
-        ];
-        aWall.x_offset = 2;
-        aWall.units_long = kiln.units_long - 4;
-      }
-
-      if (currentLayer < chamber.layers) {
-        // Create a full length wall
-        walls.create(layer, aWall)
-        walls.debug('Creating right hand wall below chamber height.');
-      } else if (currentLayer < firebox.layers) {
-        walls.debug('Creating right hand wall below firebox height.');
-
-        // Create along firebox
-        if (aWall.layer_type === 'header') {
-          aWall.units_long = walls.throat.col
-        } else {
-          aWall.units_long = walls.throat.col + 2
-        }
-        walls.create(layer, aWall);
-
-        // Create along chimney
-        aWall.units_long = chimney.depth / horizantalUnit + 3
-        aWall.x_offset = kiln.units_long - aWall.units_long - 1
-        aWall.brick_courses = [
-          ['Medium', 'internal']
-        ]
-        if (aWall.layer_type === 'header') {
-          // The chimney does not have header rows above the chamber height because it is only 1 brick thick.
-          aWall.layer_type = 'even'
-        }
-        walls.create(layer, aWall)
-      } else if (currentLayer > firebox.layers) {
-        // If we are above the height of the firebox then it is chimney only
-        // there are no header rows there and it is only a single brick thick
-        if (aWall.layer_type === 'header') {
-          aWall.layer_type = 'even'
-        }
-        walls.debug('Creating right hand wall above firebox height.');
-
-        aWall.units_long = chimney.depth / horizantalUnit + 3
-        aWall.x_offset = kiln.units_long - aWall.units_long - 1
-        aWall.brick_courses = [
-          ['Medium', 'internal']
-        ]
-        walls.create(layer, aWall)
-      }
-    }
-  },
-  throat: {
-    col: 0,
-    depth: standardBrick.length,
-    create(layer, layer_type) {
-      walls.debug(`Throat: layer_type:${layer_type}`)
-      const currentLayer = kiln.numOfLayers - 2
-
-      // eslint-disable-next-line prefer-const
-      let aWall = {
-        layer_type: layer_type,
-        orientation: 'cross-wise',
-        units_long: kiln.units_wide - 1,
-        x_offset: walls.throat.col,
-        y_offset: 0,
-      }
-      if (currentLayer > firebox.layers) {
-        // Throat does not need to be drawn above the firebox height so we can return immediately
-        return
-      }
-      else if (aWall.layer_type === 'header') {
-        // The interlacing is different above the chamber though so we need to adjust where things go.
-        if (currentLayer < chamber.layers) {
-          // We are inside the kiln and need to interlace this header row with the side walls
-          aWall.brick_courses = [['Super', 'internal']];
-        }
-        else {
-          // The wall is now an outside wall because we are above the chamber
-          aWall.brick_courses = [['Super', 'external']];
-        }
-      }
-      else if (currentLayer < chamber.layers) {
-        // Not a header and below the chamber height
-        aWall.brick_courses = [
-          ['Super', 'internal'],
-          ['Super', 'internal']
-        ];
-      }
-      else if (currentLayer < firebox.layers) {
-        // Not a header and above the chamber height
-        aWall.brick_courses = [
-          ['Super', 'internal'],
-          ['IFB', 'external']
-        ];
-      }
-      else {
-        console.error(`Somehow we ended up with a brick in an unexpected place at Layer=${currentLayer} Layer Type=${layer_type}`);
-      }
-      walls.create(layer, aWall);
-    }
-  },
-  bag_wall: {
-    col: 0,
-    depth: standardBrick.length,
-    create(layer, layer_type) {
-      walls.debug(`Bag: layer_type:${layer_type}`)
-      const currentLayer = kiln.numOfLayers - 2;
-
-      // eslint-disable-next-line prefer-const
-      let aWall = {
-        layer_type: layer_type,
-        orientation: 'cross-wise',
-        units_long: kiln.units_wide,
-        x_offset: walls.bag_wall.col,
-        y_offset: 0
-      };
-      // TODO: Clean this up to be more self-explanatory
-      if (currentLayer >= chamber.layers) {
-        // When above the chamber we need to only draw a sigle walled chimney
-        aWall.x_offset += 1;
-        aWall.brick_courses = [
-          ['Medium', 'internal']
-        ];
-        if (aWall.layer_type === 'header') {
-          // If we are singled walled headers are not possible so we treat it at as an even row
-          aWall.layer_type = 'even'
-        }
-      } else if (aWall.layer_type === 'header') {
-        // Below the height of the chamber we treat header rows normally
-        aWall.brick_courses = [
-          ['Super', 'internal']
-        ];
-        aWall.units_long = kiln.units_wide - 3;
-      } else if (currentLayer < chamber.layers) {
-        // Below the height of the chamber we treat this a two brick thick internal wall
-        aWall.brick_courses = [
-          ['Super', 'internal'],
-          ['Super', 'internal']
-        ];
-      } else {
-        // Can't get here because the currentLayer has to be either one of <,=,>
-      }
-      walls.create(layer, aWall)
-    },
-    throat: {
-      col: 0,
-      depth: standardBrick.length,
-      create(layer, layer_type) {
-        const currentLayer = kiln.numOfLayers
-
-        // eslint-disable-next-line prefer-const
-        let aWall = {
-          orientation: 'cross-wise',
-          units_long: kiln.units_wide,
-          x_offset: walls.throat.col,
-          y_offset: 0,
-          brick_courses: [
-            ['Super', 'internal'],
-            ['Super', 'internal']
-          ]
-        }
-        if (currentLayer >= firebox.layers) {
-          // Throat does not need to be drawn above the firebox height so we can return immediately
-          return
-        } else if (layer_type === 'header') {
-          // The interlacing is different above the chamber though so we need to adjust where things go.
-          if (currentLayer < chamber.layers) {
-            // We are inside the kiln and need to interlace this header row with the side walls
-            aWall.units_long = kiln.units_wide - 3;
-            aWall.brick_courses = [
-              ['Super', 'internal']
-            ];
-          } else {
-            // The wall is now an outside wall because we are above the chamber
-            aWall.units_long = kiln.units_wide;
-            aWall.y_offset -= 1;
-            aWall.brick_courses = [
-              ['Super', 'external']
-            ];
-          }
-        } else if (currentLayer < chamber.layers) {
-          // Not a header and below the chamber height
-          aWall.brick_courses = [
-            ['Super', 'internal'],
-            ['Super', 'internal']
-          ];
-        } else if (currentLayer < firebox.layers) {
-          // Not a header and above the chamber height
-          aWall.brick_courses = [
-            ['Super', 'internal'],
-            ['IFB', 'external']
-          ];
-        } else {
-          console.error(`Somehow we ended up with a brick in an unexpected place at Layer=${currentLayer} Layer Type=${layer_type}`);
-        }
-        walls.create(layer, aWall);
-      }
-    }
-  },
-  back_wall: {
-    col: 0,
-    depth: standardBrick.length,
-    create(layer, layer_type) {
-      walls.debug(`Back: layer_type:${layer_type}`)
-      const currentLayer = kiln.numOfLayers - 2
-      let aWall = {
-        layer_type: layer_type,
-        orientation: 'cross-wise',
-        units_long: kiln.units_wide,
-        x_offset: kiln.units_long - 2,
-        y_offset: 0,
-        brick_courses: [
-          ['Super', 'internal'],
-          ['Medium', 'external']
-        ]
-      };
-
-      // TODO: Clean this up to be more self-explanatory
-      if (currentLayer >= chamber.layers) {
-        // When above the chamber we need to only draw a single walled chimney
-        aWall.brick_courses = [
-          ['Medium', 'internal']
-        ];
-        if (aWall.layer_type === 'header') {
-          // If we are singled walled then headers are not possible so we treat it at as an even row
-          aWall.layer_type = 'even'
-        }
-      } else if (layer_type === 'header') {
-        // Below the height of the chimney we treat header rows normally
-        aWall.brick_courses = [
-          ['Super', 'internal']
-        ];
-        aWall.y_offset -= 2;
-        aWall.units_long += 1;
-      } else {
-        // In this case the basic wall we defined originally does not require overrides.
-      }
-      walls.create(layer, aWall)
-    }
+    let debugOn = false;
+    //if (debugOn) {console.debug(`${this.constructor.name}: ${message}`); }
+    if (debugOn) {console.debug(`Walls: ${message}`); }
   },
   create(layer, wall) {
     walls.debug(`${JSON.stringify(wall)}`);
-    walls.debug(`Create: layer_type:${wall.layer_type} length:${wall.units_long} offsets:${wall.y_offset}/${wall.x_offset}`)
+    walls.debug(`Create: layer_type: ${wall.layer_type} length:${wall.units_long} offsets:${wall.y_offset}/${wall.x_offset}`)
 
     if (wall.orientation === 'length-wise') {
       this.handleLengthwiseWall(layer, wall);
@@ -530,6 +213,365 @@ let debugOn = false;
         const new_brick = new Brick({ layer: kiln.numOfLayers, x: real_column, y: real_row, type: brickType, orientation: brick_orientation });
         new_brick.insertIntoLayer(layer);
       }
+    }
+  },
+  front_wall: {
+    col: 0,
+    depth: standardBrick.length,
+    create(layer) {
+      const layer_type = layer.layer_type;
+      walls.debug(`front_wall: layer_type:${layer_type}`)
+      const aWall = {
+        layer_type: layer_type,
+        orientation: 'cross-wise',
+        units_long: kiln.units_wide,
+        x_offset: 0,
+        y_offset: 0,
+        brick_courses: [['Medium', 'external'],['Super', 'internal']]
+      };
+
+      if (layer_type === 'header') {
+        // Header rows only need one brick and are offset by 1/2 a brick
+        aWall.brick_courses = [['Super', 'external']];
+        aWall.y_offset -= 1;
+      }
+      // The front wall is as high as the firebox and only interacts with the side wall
+      if (layer.belowFirebox) {
+        walls.create(layer, aWall)
+      } else {
+        // Don't need to do anything.
+      }
+    }
+  },
+  left_wall: {
+    col: 0, // Where the wall starts on the left
+    depth: standardBrick.length,
+    create(layer, layer_type) {
+      walls.debug(`Left: layer_type:${layer_type}`)
+      const aWall = {
+        layer_type: layer_type,
+        orientation: 'length-wise',
+        units_long: kiln.units_long,
+        x_offset: 0,
+        y_offset: 0,
+        brick_courses: [
+          ['IFB', 'external'],
+          ['Super', 'internal']
+        ]
+      }
+      walls.debug(`walls.left_wall.create --- currentLayer:${layer.layerNumber} layer_type:${layer_type} length:${aWall.units_long} offsets:${aWall.y_offset}/${aWall.x_offset}`)
+
+      if (aWall.layer_type === 'header') {
+        // Header rows only need one brick so we override that.
+        // We also shorten the row and offset 
+        // this is because the front and back rows go the whole width of the kiln
+        aWall.brick_courses = [
+          ['Super', 'external']
+        ];
+        aWall.x_offset = 2;
+        aWall.units_long = kiln.units_long - 4;
+      }
+
+      if (layer.belowChamber) {
+        // Create a full length wall
+        walls.create(layer, aWall)
+        walls.debug('Creating left hand wall below chamber height.')
+      } else if (layer.belowFirebox) {
+        walls.debug('Creating left hand wall below firebox height.');
+
+        // Create along firebox
+        if (aWall.layer_type === 'header') {
+          aWall.units_long = walls.throat.col
+        } else {
+          aWall.units_long = walls.throat.col + 2
+        }
+        walls.create(layer, aWall);
+
+        // Create along chimney
+        aWall.units_long = chimney.depth / horizantalUnit + 3
+        aWall.y_offset = 1;
+        aWall.x_offset = kiln.units_long - aWall.units_long - 1
+        aWall.brick_courses = [
+          ['Medium', 'internal']
+        ]
+
+        if (aWall.layer_type === 'header') {
+          // The chimney does not have header rows above the chamber height because it is only 1 brick thick.
+          aWall.layer_type = 'even'
+        }
+        walls.create(layer, aWall)
+      } else if (!layer.belowFirebox) {
+        // If we are above the height of the firebox then it is chimney only
+        // there are no header rows there and it is only a single brick thick
+        if (aWall.layer_type === 'header') {
+          aWall.layer_type = 'even'
+        }
+        walls.debug('Creating left hand wall above firebox height.');
+        aWall.y_offset = 1;
+        aWall.units_long = chimney.depth / horizantalUnit + 3
+        aWall.x_offset = kiln.units_long - aWall.units_long - 1
+        aWall.brick_courses = [
+          ['Medium', 'internal']
+        ]
+        walls.create(layer, aWall)
+      } else {
+        console.error('Something is broken in the left_wall function')
+      }
+    }
+  },
+  right_wall: {
+    col: 0,
+    depth: standardBrick.length,
+    create(layer, layer_type) {
+      walls.debug(`Right: layer_type:${layer_type}`)
+      const aWall = {
+        layer_type: layer_type,
+        orientation: 'length-wise',
+        units_long: kiln.units_long,
+        x_offset: 0,
+        y_offset: kiln.units_wide - 2,
+        brick_courses: [
+          ['Super', 'internal'],
+          ['IFB', 'external']
+        ]
+      }
+
+      if (aWall.layer_type === 'header') {
+        // Header rows only need one brick so we override that.
+        // We also shorten the row and offset it because
+        // the front and back rows go the whole width of the kiln
+        aWall.brick_courses = [
+          ['Super', 'external']
+        ];
+        aWall.x_offset = 2;
+        aWall.units_long = kiln.units_long - 4;
+      }
+
+      if (layer.belowChamber) {
+        // Create a full length wall
+        walls.create(layer, aWall)
+        walls.debug('Creating right hand wall below chamber height.');
+      } else if (layer.belowFirebox) {
+        walls.debug('Creating right hand wall below firebox height.');
+
+        // Create along firebox
+        if (aWall.layer_type === 'header') {
+          aWall.units_long = walls.throat.col
+        } else {
+          aWall.units_long = walls.throat.col + 2
+        }
+        walls.create(layer, aWall);
+
+        // Create along chimney
+        aWall.units_long = chimney.depth / horizantalUnit + 3
+        aWall.x_offset = kiln.units_long - aWall.units_long - 1
+        aWall.brick_courses = [
+          ['Medium', 'internal']
+        ]
+        if (aWall.layer_type === 'header') {
+          // The chimney does not have header rows above the chamber height because it is only 1 brick thick.
+          aWall.layer_type = 'even'
+        }
+        walls.create(layer, aWall)
+      } else if (!layer.belowFirebox) {
+        // If we are above the height of the firebox then it is chimney only
+        // there are no header rows there and it is only a single brick thick
+        if (aWall.layer_type === 'header') {
+          aWall.layer_type = 'even'
+        }
+        walls.debug('Creating right hand wall above firebox height.');
+
+        aWall.units_long = chimney.depth / horizantalUnit + 3
+        aWall.x_offset = kiln.units_long - aWall.units_long - 1
+        aWall.brick_courses = [
+          ['Medium', 'internal']
+        ]
+        walls.create(layer, aWall)
+      }
+    }
+  },
+  throat: {
+    col: 0,
+    depth: standardBrick.length,
+    create(layer, layer_type) {
+      walls.debug(`Throat: layer_type:${layer_type}`)
+      // eslint-disable-next-line prefer-const
+      let aWall = {
+        layer_type: layer_type,
+        orientation: 'cross-wise',
+        units_long: kiln.units_wide - 1,
+        x_offset: walls.throat.col,
+        y_offset: 0,
+      }
+      if (!layer.inFirebox) {
+        // Throat does not need to be drawn above the firebox height so we can return immediately
+        return
+      }
+      else if (aWall.layer_type === 'header') {
+        // The interlacing is different above the chamber though so we need to adjust where things go.
+        if (layer.belowChamber) {
+          // We are inside the kiln and need to interlace this header row with the side walls
+          aWall.brick_courses = [['Super', 'internal']];
+          aWall.units_long = kiln.units_wide - 3;
+        }
+        else {
+          // The wall is now an outside wall because we are above the chamber
+          aWall.brick_courses = [['Super', 'external']];
+        }
+      }
+      else if (layer.belowChamber) {
+        // Not a header and below the chamber height
+        aWall.brick_courses = [
+          ['Super', 'internal'],
+          ['Super', 'internal']
+        ];
+      }
+      else if (layer.belowFirebox) {
+        // Not a header and above the chamber height
+        aWall.brick_courses = [
+          ['Super', 'internal'],
+          ['IFB', 'external']
+        ];
+      }
+      else {
+        console.error(`Somehow we ended up with a brick in an unexpected place at Layer=${layer.layerNum} Layer Type=${layer_type}`);
+      }
+      walls.create(layer, aWall);
+    }
+  },
+  bag_wall: {
+    col: 0,
+    depth: standardBrick.length,
+    create(layer, layer_type) {
+      walls.debug(`Bag: layer_type:${layer_type}`)
+      // eslint-disable-next-line prefer-const
+      let aWall = {
+        layer_type: layer_type,
+        orientation: 'cross-wise',
+        units_long: kiln.units_wide,
+        x_offset: walls.bag_wall.col,
+        y_offset: 0
+      };
+      // TODO: Clean this up to be more self-explanatory
+      if (!layer.belowChamber) {
+        // When above the chamber we need to only draw a sigle walled chimney
+        aWall.x_offset += 1;
+        aWall.brick_courses = [
+          ['Medium', 'internal']
+        ];
+        if (aWall.layer_type === 'header') {
+          // If we are singled walled headers are not possible so we treat it at as an even row
+          aWall.layer_type = 'even'
+        }
+      } else if (aWall.layer_type === 'header') {
+        // Below the height of the chamber we treat header rows normally
+        aWall.brick_courses = [
+          ['Super', 'internal']
+        ];
+        aWall.y_offset = 0;
+        aWall.units_long = kiln.units_wide - 3;
+      } else if (layer.belowChamber) {
+        // Below the height of the chamber we treat this a two brick thick internal wall
+        aWall.brick_courses = [
+          ['Super', 'internal'],
+          ['Super', 'internal']
+        ];
+      } else {
+        // Can't get here because the currentLayer has to be either one of <,=,>
+      }
+      walls.debug(`Creating ${aWall.orientation} ${aWall.brick_courses} ${kiln.numOfLayers}:${aWall.x_offset}:${aWall.y_offset} in walls.create-bag-wall.`);
+      walls.create(layer, aWall)
+    },
+    throat: {
+      col: 0,
+      depth: standardBrick.length,
+      create(layer, layer_type) {
+        let aWall = {
+          orientation: 'cross-wise',
+          units_long: kiln.units_wide,
+          x_offset: walls.throat.col,
+          y_offset: 0,
+          brick_courses: [
+            ['Super', 'internal'],
+            ['Super', 'internal']
+          ]
+        }
+        if (!layer.belowFirebox) {
+          // Throat does not need to be drawn above the firebox height so we can return immediately
+          return
+        } else if (layer_type === 'header') {
+          // The interlacing is different above the chamber though so we need to adjust where things go.
+          if (layer.belowChamber) {
+            // We are inside the kiln and need to interlace this header row with the side walls
+            aWall.units_long = kiln.units_wide - 3;
+            aWall.brick_courses = [
+              ['Super', 'internal']
+            ];
+          } else {
+            // The wall is now an outside wall because we are above the chamber
+            aWall.units_long = kiln.units_wide;
+            aWall.y_offset -= 1;
+            aWall.brick_courses = [
+              ['Super', 'external']
+            ];
+          }
+        } else if (layer.belowChamber) {
+          // Not a header and below the chamber height
+          aWall.brick_courses = [
+            ['Super', 'internal'],
+            ['Super', 'internal']
+          ];
+        } else if (layer.belowFirebox) {
+          // Not a header and above the chamber height
+          aWall.brick_courses = [
+            ['Super', 'internal'],
+            ['IFB', 'external']
+          ];
+        } else {
+          console.error(`Somehow we ended up with a brick in an unexpected place at Layer=${layer.layerNum} Layer Type=${layer_type}`);
+        }
+        walls.create(layer, aWall);
+      }
+    }
+  },
+  back_wall: {
+    col: 0,
+    depth: standardBrick.length,
+    create(layer, layer_type) {
+      walls.debug(`Back: layer_type:${layer_type}`)
+      let aWall = {
+        layer_type: layer_type,
+        orientation: 'cross-wise',
+        units_long: kiln.units_wide,
+        x_offset: kiln.units_long - 2,
+        y_offset: 0,
+        brick_courses: [
+          ['Super', 'internal'],
+          ['Medium', 'external']
+        ]
+      };
+
+      // TODO: Clean this up to be more self-explanatory
+      if (!layer.belowChamber) {
+        // When above the chamber we need to only draw a single walled chimney
+        aWall.brick_courses = [
+          ['Medium', 'internal']
+        ];
+        if (aWall.layer_type === 'header') {
+          // If we are singled walled then headers are not possible so we treat it at as an even row
+          aWall.layer_type = 'even'
+        }
+      } else if (layer_type === 'header') {
+        // Below the height of the chimney we treat header rows normally
+        aWall.brick_courses = [
+          ['Super', 'internal']
+        ];
+        aWall.y_offset -= 2;
+        aWall.units_long += 1;
+      } else {
+        // In this case the basic wall we defined originally does not require overrides.
+      }
+      walls.create(layer, aWall)
     }
   },
 }
@@ -932,26 +974,25 @@ class Chamber extends KilnSection {
 }
 class Firebox extends KilnSection {
   calculate() {
-    firebox.depth = 3 * standardBrick.length;
-    firebox.height = chamber.height * 1.75;
-    firebox.square = chamber.width * firebox.depth;
-    firebox.cubic = Math.round(firebox.square * firebox.height / cubic_foot * 10) / 10;
-    firebox.layers = firebox.height / standardBrick.height;
+    this.depth = 3 * standardBrick.length;
+    this.height = chamber.height * 1.75;
+    this.square = chamber.width * firebox.depth;
+    this.cubic = Math.round(this.square * this.height / cubic_foot * 10) / 10;
+    this.layers = this.height / standardBrick.height;
   }
 }
 class Chimney extends KilnSection {
   calculate() {
-    chimney.depth = 2 * standardBrick.length;
-    chimney.height = chamber.height * 2.5;
-    chimney.square = chamber.width * chimney.depth;
-    chimney.cubic = (chimney.square * chimney.height / cubic_foot).toFixed(1);
-    chimney.layers = chimney.height / standardBrick.height;
-    chimney.ratio = chimney.square / firebox.square
+    this.depth = 2 * standardBrick.length;
+    this.height = chamber.height * 2.5;
+    this.square = chamber.width * this.depth;
+    this.cubic = (this.square * this.height / cubic_foot).toFixed(1);
+    this.layers = this.height / standardBrick.height;
+    this.ratio = this.square / firebox.square
     console.info(`Optimal chimney size would be ${firebox.square / 10}-${firebox.square / 7}`)
-    console.info(`Chimney ratio is ${chimney.ratio}`)
+    console.info(`Chimney ratio is ${this.ratio}`)
   }
 }
-
 
 /**
  * Class representing a brick.
@@ -1010,7 +1051,7 @@ class Brick {
   }
 
   insertIntoLayer(layer) {
-    this.debug(`insertIntoLayer: ${this.orientation} brick`)
+    this.debug(`insertIntoLayer: ${this.orientation} brick at ${this.x}:${this.y}`)
     this.checkForOverlap(layer)
     layer.bricks[this.x][this.y] = this;
     this.updateBrickCount(layer, 1)
@@ -1043,30 +1084,30 @@ class Brick {
       // This brick will be directly overwritten but we still need to tell it to remove itself 
       //  in order to keep the types of bricks count accurate.
       overlappingBrick.deleteSelf(layer);
-    } else if (this.orientation === 'portrait') {
-      overlappingBrick = bricks[row][(col + 1)];
-      this.debug(`Checking for brick in next row`);
-      if (overlappingBrick instanceof Brick) { // If there is a brick in the next row
-        this.debug(`Found brick in next row ${row + 1}:${col}`);
-        overlappingBrick.deleteSelf(layer);
-      }
-      else { this.debug('No overlapping brick found') }
-    } else if (this.orientation === 'landscape') {
-      overlappingBrick = bricks[row][(col + 1)];
-      this.debug(`Checking for brick in next column`);
-      if (overlappingBrick instanceof Brick) {// If there is a brick in the next column
-        this.debug(`Found brick in next column ${row}:${col + 1}`);
-        overlappingBrick.deleteSelf(layer);
-      }
-      else { this.debug('No overlapping brick found') }
     }
+    // TODO: This is not working correctly. It is deleting bricks that it shouldn't.
+    // There should also never be any overlap with bricks if we get our length and width calculations correct.  
+
+    // else if (this.orientation === 'portrait') {
+    //   overlappingBrick = bricks[row][(col )];
+    //   this.debug(`Checking for brick in next row`);
+    //   if (overlappingBrick instanceof Brick) { // If there is a brick in the next row
+    //     this.debug(`Found brick in next row ${row + 1}:${col}`);
+    //     //overlappingBrick.deleteSelf(layer);
+    //   }
+    //   else { this.debug('No overlapping brick found') }
+    // } else if (this.orientation === 'landscape') {
+    //   overlappingBrick = bricks[row][(col + 1)];
+    //   this.debug(`Checking for brick in next column`);
+    //   if (overlappingBrick instanceof Brick) {// If there is a brick in the next column
+    //     this.debug(`Found brick in next column ${row}:${col + 1}`);
+    //     // overlappingBrick.deleteSelf(layer);
+    //   }
+    //   else { this.debug('No overlapping brick found') }
+    // }
   }
 
-  /**
-   * Draw the brick on a specified context, scaled by a specified factor.
-   * @param {Object} ctx - The 2D rendering context for the drawing surface of an HTML canvas.
-   * @param {number} scale - The scale factor to apply to the drawing.
-   */
+
   updateBrickCount(layer, increment) {
     if (this.type === 'IFB') {
       layer.num_IFBs = layer.num_IFBs + increment;
@@ -1078,17 +1119,17 @@ class Brick {
     }
     else { console.error(`***unknown brick type*** ${this.type}`) }
   }
-
+  /**
+   * Draw the brick on a specified context, scaled by a specified factor.
+   * @param {Object} ctx - The 2D rendering context for the drawing surface of an HTML canvas.
+   * @param {number} scale - The scale factor to apply to the drawing.
+   */
   drawFromTop(canvasObject) {
     // TODO: Modify this to take two canvasObjects and draw the brick on both of them
-    //  This would allow us to draw the brick on the birdseye view and the thumbnail at the same time
-    let x = this.x;
-    let y = this.y;
+    //  This would allow us to draw the brick on the birdseye view and the thumbnail at the same time.
     let width = this.unit_width;
     let length = this.unit_length;
-
-    // Draw the brick on the canvas
-    canvasObject.drawRect(x, y, width, length, 'gray', this.color);
+    canvasObject.drawRect(this.x, this.y, width, length, 'gray', this.color);
   }
   drawFromSide(canvasObject) {
     let x = this.x;
@@ -1099,17 +1140,6 @@ class Brick {
 
     canvasObject.drawRect(x, y, width, length, 'gray', this.color);
   }
-
-  draw(ctx, x, y, width, length) {
-    // console.log(`Drawing: ${this.orientation} brick on layer ${this.layer} at ${x}:${y} with length width of ${length}:${width}}`)
-    ctx.strokeStyle = 'gray';
-    ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.rect(x, y, width, length);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-  }
 }
 
 class Layers {
@@ -1118,6 +1148,7 @@ class Layers {
     this.num_IFBs = 0;
     this.num_supers = 0;
     this.num_mediums = 0;
+    this.numOfLayers = -2; // We start with 2 base layers so we need to subtract them from the count
   }
   debug(message) {
     let debugOn = false;
@@ -1131,7 +1162,7 @@ class Layers {
    * @param {string} brickType 
    */
   createBaseLayer(oriented, brickType) {
-    let myLayer = new Layer();
+    let myLayer = new Layer('base');
     for (let col = 0; col < kiln.units_long;) {
       for (let row = 0; row < kiln.units_wide;) {
         myLayer.bricks[col][row] = new Brick({ layer: kiln.numOfLayers, x: col, y: row, type: brickType, orientation: oriented });
@@ -1147,7 +1178,8 @@ class Layers {
    */
   createLayerForWalls(layer_type) {
     'use strict';
-    let layer = new Layer();
+    let layer = new Layer(layer_type);
+    this.addLayer(layer)
 
     this.debug(`Creating layer ${kiln.numOfLayers} of type ${layer_type}`);
     this.debug('Creating right wall');
@@ -1157,29 +1189,87 @@ class Layers {
     walls.left_wall.create(layer, layer_type);
 
     this.debug('Creating front wall');
-    walls.front_wall.create(layer, layer_type)
+    walls.front_wall.create(layer)
 
     this.debug('Creating throat wall');
     walls.throat.create(layer, layer_type)
 
     this.debug('Creating bag wall');
-    walls.bag_wall.create(layer, layer_type)
+     walls.bag_wall.create(layer, layer_type)
 
     this.debug('Creating Back Wall');
     walls.back_wall.create(layer, layer_type)
-
-    this.addLayer(layer)
+    this.updateBrickCountForLayer(layer)
   }
 
   addLayer(layer) {
     this.layers.push(layer);
     kiln.numOfLayers += 1;
+  }
+  validateCoordinates(layerNumber, x, y) {
+    // Check if the layer exists
+    if (layerNumber < 0 || layerNumber > kiln.numOfLayers - 1 ){
+      this.debug(`Layer ${layerNumber} does not exist`);
+      return false;
+    }
+    // Check if the coordinates are within the bounds of the layer  
+    if (x < 0 || x > kiln.units_long - 1 || y < 0 || y > kiln.units_wide - 1) {
+      this.debug(`Coordinates ${x}:${y} are out of bounds for layer ${layer.layerNum}`);
+      return false;
+    }
+    return true;
+  }
+  updateBrickCountForLayer(layer) {
     this.num_IFBs += layer.num_IFBs;
     this.num_supers += layer.num_supers;
     this.num_mediums += layer.num_mediums;
   }
   calculateRowIncrement(orientation) { return orientation === 'landscape' ? 1 : 2; }
   calculateColumnIncrement(orientation) { return orientation === 'landscape' ? 2 : 1; }
+  findBrickOnLayer(view, layerNumber, x, y) {
+    // This function is used to find the brick that is at the specified coordinates on the specified layer
+    // Because bricks are multiple units wide and long we need to check the brick in the next row or column depending on the orientation
+    if (this.validateCoordinates(layerNumber, x, y)) {
+      let layer = this.layers[layerNumber];
+      let brick = {};
+
+      brick = layer.bricks[x][y];
+      // Check if the brick is in the specified location
+      if (brick instanceof Brick) {
+        return brick;
+      }
+
+      // If we did not find one and and are not at the top row
+      // then check the row above for a portrait brick
+      if (y > 0) {
+        brick = layer.bricks[x][y - 1] // Try the next row
+        this.debug(`Checking row above for a portrait brick: ${x}:${y - 1}`)
+        if (brick instanceof Brick) {
+          let orientation = brick.orientation;
+          if (orientation === 'portrait') {
+            return brick;
+          }
+        }
+      }
+      // If we did not find one and and are not at the first column
+      // then check the column to the left for a landscape brick
+      if (x > 0) {
+        brick = layer.bricks[x - 1][y] // Try the next column
+        this.debug(`Checking column to the left for a landscape brick: ${x - 1}:${y}`)
+        if (brick instanceof Brick) {
+          let orientation = brick.orientation;
+          if (orientation === 'landscape') {
+            return brick;
+          }
+        }
+      }
+      if (view === 'side') {
+        // If we are looking from the side then we need to check the row behind the current row
+        return this.findBrickOnLayer('', layerNumber, x, y - 1)
+      }
+    }
+    return undefined;
+  }
   drawBirdseyeView() {
     this.debug('Drawing birdseye view!')
     this.layers.forEach((layer, currentLayer) => {
@@ -1266,7 +1356,7 @@ class Layers {
 }
 
 class Layer {
-  constructor() {
+  constructor(layer_type) {
     this.units_long = kiln.units_long;
     this.units_wide = kiln.units_wide;
     this.bricks = new Array(this.units_long).fill().map(() => new Array(this.units_wide).fill());
@@ -1274,14 +1364,43 @@ class Layer {
     this.num_IFBs = 0;
     this.num_supers = 0;
     this.num_mediums = 0;
+    this.layer_type = layer_type;
+    this.layerNumber = kiln.numOfLayers -2 
+    // We start with 2 base layers so we need to subtract them from the count;
+
+    if (this.layerNumber < chamber.layers) {
+      this.inFirebox = true;
+      this.belowFirebox = true;
+      this.inChamber = true;
+      this.belowChamber = true;
+    } else if (this.layerNumber <= chamber.layers) {
+      this.inFirebox = true;
+      this.belowFirebox = true;
+      this.inChamber = true;
+      this.belowChamber = false;
+    }
+    else if (this.layerNumber < firebox.layers) {
+      this.inFirebox = true;
+      this.belowFirebox = true;
+      this.belowChamber = false;
+      this.inChamber = false;
+    } else if (this.layerNumber <= firebox.layers) {
+      this.inFirebox = true;
+      this.belowFirebox = false;
+      this.belowChamber = false;
+      this.inChamber = false;
+    }
+    else if (this.layerNumber > firebox.layers) {
+      this.belowFirebox = false;
+      this.inFirebox = false;
+      this.belowChamber = false;
+      this.inChamber = false;
+    }
   }
 
   debug(message) {
-let debugOn = false;
-
-    if (debugOn) {
-      console.debug(`${this.constructor.name}: ${message}`);
-    }
+    let debugOn = false;
+    if (debugOn) {console.debug(`${this.constructor.name}: ${message}`);}
   }
 
   deleteBrick(col, row) { // This function is not used anywhere but it might be useful in the future
@@ -1370,7 +1489,7 @@ class Canvas {
   }
 
   debug(message) {
-let debugOn = false;
+    let debugOn = false;
 
     if (debugOn) {
       console.debug(`${this.constructor.name}: ${message}`);
@@ -1392,6 +1511,39 @@ let debugOn = false;
     this.ctx = this.canvas.getContext('2d');
     this.canvas.height = this.height * this.scale;
     this.canvas.width = this.width * this.scale;
+
+      // Add onClick event listener
+    this.canvas.addEventListener('click', (event) => {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      let brick_x = Math.floor(x / this.scale);
+      let brick_y = Math.floor(y / this.scale);
+      let brick = {};
+      this.debug("The user clicked " + this.canvasName + " at x: " + brick_x + " y: " + brick_y);
+
+      // Check if canvasName contains 'layer'
+      if (this.canvasName.includes('Layer')) {
+        // Get the characters after 'layer'
+        let layerNum = this.canvasName.split('Layer')[1];
+        layerNum = parseInt(layerNum.replace('_canvas', ''));
+        brick = kiln.layers.findBrickOnLayer('birdseye',layerNum, brick_x, brick_y);
+        // This is where the logic for the action should go
+        // ...
+        // ...
+      }
+      else if (this.canvasName.includes('side_view')) {
+        // Get the characters after 'layer'
+        let layerNum = kiln.numOfLayers - brick_y -1;
+        brick_y = kiln.units_wide-1;
+        this.debug(`The user clicked on the side view at layer ${layerNum}:${brick_x}:${brick_y}`)
+        let brick = {};
+        brick = kiln.layers.findBrickOnLayer('side', layerNum, brick_x, brick_y);
+        // This is where the logic for the action should go
+        // ...
+        // ...
+      }
+    });
   }
   drawRect(x, y, width, length, strokeStyle, fillStyle) {
     // We don't scale the ctx because it will scale the stroke width as well as the position and size of the bricks
