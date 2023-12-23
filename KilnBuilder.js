@@ -38,9 +38,14 @@ const birdseye_scale = 18;
 const sideview_scale = 18;
 const thumbnail_scale = 8;
 
+/**
+ * Represents the walls of a kiln.
+ * @namespace
+ */
 let walls = {
   debug(message) {
-    debugOn = false;
+let debugOn = false;
+
     if (debugOn) {
       console.debug(`${this.constructor.name}: ${message}`);
     }
@@ -546,7 +551,8 @@ class Kiln {
   }
 
   debug(message) {
-    debugOn = false;
+let debugOn = false;
+
     if (debugOn) {
       console.debug(`${this.constructor.name}: ${message}`);
     }
@@ -629,61 +635,64 @@ class Kiln {
   }
 }
 
-let shelves = {
-  num_wide: 0,
-  num_long: 0,
-  width: 0,
-  length: 0,
-  x_offset: 0,
-  y_offset: 0,
-  total_width: 0,
-  total_length: 0,
-  cubic_usable: 0,
-  rotated: false,
-  extra_space: 1,
-  instances: [],
-  shelf_sizes: [[8, 16], [11, 22], [11, 23], [12, 12], [12, 24], [13, 14], [13, 26], [14, 28], [16, 16], [19, 25], [20, 20], [24, 24]],
+class Shelves {
+  constructor() {
+    this.num_wide = 0;
+    this.num_long = 0;
+    this.width = 0;
+    this.length = 0;
+    this.x_offset = 0;
+    this.y_offset = 0;
+    this.total_width = 0;
+    this.total_length = 0;
+    this.cubic_usable = 0;
+    this.rotated = false;
+    this.extra_space = 1;
+    this.instances = [];
+    this.shelf_sizes = [[8, 16], [11, 22], [11, 23], [12, 12], [12, 24], [13, 14], [13, 26], [14, 28], [16, 16], [19, 25], [20, 20], [24, 24]];
+  }
 
   debug(message) {
-    debugOn = false;
+    let debugOn = true;
     if (debugOn) {
       console.debug(`${this.constructor.name}: ${message}`);
     }
-  },
+  }
 
   rotateDefaultSizes() {
     // Rotate the shelf sizes so that the longest dimension is the width (or revert to the original if it is already that way)
     // also update the dropdown to reflect the change
     shelves.debug('rotateDefaultSizes started');
-    shelves.rotated = $('#shelves_rotated').is(':checked');
+    this.rotated = $('#shelves_rotated').is(':checked');
 
     // get currently selected shelf size by index
     let selected_index = $("#shelf_sizes option:selected").index();
 
     // reverse the shelf sizes using a temporary array
     let temp = [];
-    for (let i = 0; i < shelves.shelf_sizes.length; i++) {
-      temp[i] = shelves.shelf_sizes[i].reverse();
+    for (let i = 0; i < this.shelf_sizes.length; i++) {
+      temp[i] = this.shelf_sizes[i].reverse();
     }
-    shelves.shelf_sizes = temp;
+    this.shelf_sizes = temp;
 
     // repopulate the dropdown with the new shelf sizes select the same shelf size as before and refresh the dropdown
-    shelves.populateDropdown();
+    this.populateDropdown();
     $("#shelf_sizes option").eq(selected_index).prop('selected', true).parent().selectmenu("refresh");
 
     //Refresh the page now that the shelves have been rotated
     page.refreshPage();
-    shelves.debug('rotateDefaultSizes finished');
-  },
+    this.debug('rotateDefaultSizes finished');
+  }
 
   populateDropdown() {
     // populate the dropdown with the shelf sizes
     // but first clear out the dropdown in case it has been populated before
     $('#shelf_sizes').children().remove();
 
-    $.each(shelves.shelf_sizes, function (size) {
-      let shelf_description = shelves.shelf_sizes[size][0] + 'x' + shelves.shelf_sizes[size][1];
-      shelves.debug('Populating dropdown with shelf_description: ' + shelf_description);
+    this.shelf_sizes.forEach( (size) =>  {
+      this.debug('Populating dropdown with shelf_size: ' + size);
+      let shelf_description = size[0] + 'x' + size[1];
+      this.debug('Populating dropdown with shelf_description: ' + shelf_description);
       $('#shelf_sizes').append($('<option>', {
         value: shelf_description,
         text: shelf_description
@@ -691,15 +700,15 @@ let shelves = {
     })
     // add the Custom option
     $('#shelf_sizes').append($('<option>', { value: "Custom", text: "Custom" }));
-  },
+  }
 
   updateShelvesOffset() {
     // NOTE: All shelf calculations are done in inches or mm because they are not bound to brick boundaries
     // update x_offset to take into account chamber.dead_space_front and chamber.offset after chamber is created
     // update y_offset to take into account chamber.offset after chamber is created
     this.x_offset = chamber.deadspace_front + chamber.offset;
-    this.y_offset = standardBrick.length + (chamber.width - shelves.total_width) / 2;
-  },
+    this.y_offset = standardBrick.length + (chamber.width - this.total_width) / 2;
+  }
 
   /**
    * Draws the shelves in the kiln chamber on two canvases: a scaled-up view and a thumbnail.
@@ -714,19 +723,18 @@ let shelves = {
     const thumbnail_name = 'birdseye_thumbnail';
     // Center shelves in chamber
     this.updateShelvesOffset();
-    shelves.debug(`Shelves 'draw' function started`);
+    this.debug(`Shelves 'draw' function started`);
     // Get the canvas contexts for the birdseye view and the thumbnail
     const myCanvas = canvasContainer.getCanvas(shelf_Layer);
     const myThumbnail = canvasContainer.getCanvas(thumbnail_name);
 
     // Iterate throught the shelves and draw them
-    $.each(shelves.instances, function (i) {
-      shelves.debug(`Drawing shelf ${i}`);
-      let myShelf = shelves.instances[i];
-      myShelf.draw(myCanvas);
-      myShelf.draw(myThumbnail);
+    this.instances.forEach(function (shelf) {
+      shelf.draw(myCanvas);
+      shelf.draw(myThumbnail);
     });
-  },
+  }
+
   /** TODO: this description is out of date
    * Calculates the dimensions of the shelves in the kiln chamber based on the shelf length, width, and extra space.
    * The function also calculates the total width and length of the shelves, and the usable cubic footage.
@@ -739,14 +747,14 @@ let shelves = {
     'use strict';
     // NOTE: All shelf calculations are done in inches because they are not bound to brick boundaries
     // The chamber that they sit in will be calculated in bricks though.
-    let [shelf_length, shelf_width] = [shelves.length, shelves.width];
-    const myBox = shelves.getBoundingBox();
+    let [shelf_length, shelf_width] = [this.length, this.width];
+    const myBox = this.getBoundingBox();
     this.debug(`Shelves bounding box is: ${JSON.stringify(myBox)}`);
     this.instances = [];
-    for (let col = 0; col < shelves.num_long; col++) {
-      for (let row = 0; row < shelves.num_wide; row++) {
-        let shelf_x_offset = col * (shelf_length + shelves.extra_space);
-        let shelf_y_offset = row * (shelf_width + shelves.extra_space);
+    for (let col = 0; col < this.num_long; col++) {
+      for (let row = 0; row < this.num_wide; row++) {
+        let shelf_x_offset = col * (shelf_length + this.extra_space);
+        let shelf_y_offset = row * (shelf_width + this.extra_space);
 
         this.instances.push(new Shelf({
           width: shelf_width,
@@ -757,19 +765,18 @@ let shelves = {
         }));
       }
     }
-  },
+  }
 
   getBoundingBox() {
     // at the moment this is only setup to work with the default shelf sizes
 
     // Need space between each shelf
-    shelves.total_width = shelves.num_wide * (shelves.width + shelves.extra_space);
-    shelves.total_length = shelves.num_long * (shelves.length + shelves.extra_space)
-    this.debug('Shelves total width is: ' + shelves.total_width)
-    this.debug('Shelves total length is: ' + shelves.total_length)
+    this.total_width = this.num_wide * (this.width + this.extra_space);
+    this.total_length = this.num_long * (this.length + this.extra_space)
+    this.debug('Shelves total width is: ' + this.total_width)
+    this.debug('Shelves total length is: ' + this.total_length)
     // Calculate the theoretical cubic footage of the shelves. 
     // Right now this calculation is not used anywhere and it appears to be wrong.
-    shelves.cubic_usable = Math.round(shelves.total_length * shelves.total_width / cubic_foot * 10) / 10;
     let boundingBox = {
       x_min: 0,
       y_min: 0,
@@ -783,10 +790,10 @@ let shelves = {
     // let shelf_x_offset = 0;
     // let shelf_y_offset = 0;
     // let shelf_length, shelf_width;
-    // for (let col = 0; col < shelves.num_long; col++) {
-    //   for (let row = 0; row < shelves.num_wide; row++) {
-    //     shelf_x_offset = col * (shelf_length + shelves.extra_space);
-    //     shelf_y_offset = row * (shelf_width + shelves.extra_space);
+    // for (let col = 0; col < this.num_long; col++) {
+    //   for (let row = 0; row < this.num_wide; row++) {
+    //     shelf_x_offset = col * (shelf_length + this.extra_space);
+    //     shelf_y_offset = row * (shelf_width + this.extra_space);
     //     x_min = Math.min(x_min, shelf_x_offset);
     //     y_min = Math.min(y_min, shelf_y_offset);
     //   }
@@ -827,7 +834,7 @@ class Shelf {
   }
 
   debug(message) {
-    debugOn = false;
+    let debugOn = false;
     if (debugOn) {
       console.debug(`${this.constructor.name}: ${message}`);
     }
@@ -885,7 +892,7 @@ class Chamber extends KilnSection {
     this.deadspace_sides = 2;
   }
   debug(message) {
-    debugOn = false;
+    let debugOn = false;
     if (debugOn) {
       console.debug(`${this.constructor.name}: ${message}`);
     }
@@ -989,7 +996,7 @@ class Brick {
     this.color = standardBrick.types[this.type].color;
   }
   debug(message) {
-    debugOn = false;
+    let debugOn = false;
     if (debugOn) {
       console.debug(`${this.constructor.name}: ${message}`);
     }
@@ -1106,7 +1113,7 @@ class Layers {
     this.num_mediums = 0;
   }
   debug(message) {
-    debugOn = false;
+    let debugOn = false;
     if (debugOn) {
       console.debug(`${this.constructor.name}: ${message}`);
     }
@@ -1164,11 +1171,11 @@ class Layers {
     this.num_supers += layer.num_supers;
     this.num_mediums += layer.num_mediums;
   }
-  calculateRowIncrement(orientation) {    return orientation === 'landscape' ? 1 : 2; }
+  calculateRowIncrement(orientation) { return orientation === 'landscape' ? 1 : 2; }
   calculateColumnIncrement(orientation) { return orientation === 'landscape' ? 2 : 1; }
   drawBirdseyeView() {
     this.debug('Drawing birdseye view!')
-    $.each(this.layers, function (currentLayer, layer) {
+    this.layers.forEach((layer, currentLayer) => {
       const canvasName = 'Layer' + currentLayer;
       this.debug(`Drawing layer ${currentLayer} on canvas ${canvasName}`)
       let theCanvas = canvasContainer.createCanvas(
@@ -1179,7 +1186,7 @@ class Layers {
         kiln.units_wide
       );
       layer.drawBricksOnLayer(theCanvas);
-  
+
       if (currentLayer === 2) {
         let thumbnailCanvas = canvasContainer.createCanvas(
           'birdseye_thumbnail',
@@ -1201,11 +1208,11 @@ class Layers {
 
     let myCanvas = canvasContainer.createCanvas('side_view', 'side_view_area', sideview_scale, kiln.units_long, kiln.units_high);
     let myThumbnail = canvasContainer.createCanvas('side_thumbnail', 'side_thumbnail_area', thumbnail_scale, kiln.units_long, kiln.units_high);
-  
+
     $('#side_thumbnail_area').on('click', function () { $('#sideview_tab_proxy').trigger('click') })
-  
+
     console.log('Drawing sideview!')
-  
+
     // Draw the bricks on the layer.
     // We draw the bricks from the top down so start with the last layer but because
     // layers are 0 indexed we need to start with 1 less than the length of the layers array
@@ -1260,7 +1267,8 @@ class Layer {
   }
 
   debug(message) {
-    debugOn = false;
+let debugOn = false;
+
     if (debugOn) {
       console.debug(`${this.constructor.name}: ${message}`);
     }
@@ -1299,7 +1307,7 @@ class CanvasContainer {
     this.canvases = {};
   }
   debug(message) {
-    debugOn = false;
+    let debugOn = false;
     if (debugOn) {
       console.debug(`${this.constructor.name}: ${message}`);
     }
@@ -1352,7 +1360,8 @@ class Canvas {
   }
 
   debug(message) {
-    debugOn = false;
+let debugOn = false;
+
     if (debugOn) {
       console.debug(`${this.constructor.name}: ${message}`);
     }
@@ -1531,11 +1540,11 @@ function main() {
   page.refreshPage();
 }
 const page = new Page();
-let canvasContainer = new CanvasContainer();
-let kiln = new Kiln();
-let chamber = new Chamber();
-let firebox = new Firebox();
-let chimney = new Chimney();
-
+const canvasContainer = new CanvasContainer();
+const kiln = new Kiln();
+const chamber = new Chamber();
+const firebox = new Firebox();
+const chimney = new Chimney();
+const shelves = new Shelves();
 
 main();
