@@ -39,66 +39,58 @@ const sideview_scale = 18;
 const thumbnail_scale = 8;
 
 
+// None of these are used yet
+// class Wall {
+//   constructor() {
+//     // common properties
+//     this.depth = 0;
+//     this.height = 0;
+//     this.square = 0;
+//     this.cubic = 0;
+//     this.layers = 0;
+//   }
 
-class Wall {
-  constructor() {
-    // common properties
-    this.depth = 0;
-    this.height = 0;
-    this.square = 0;
-    this.cubic = 0;
-    this.layers = 0;
-  }
-
-  calculate() {
-    // common calculations
-    this.square = this.width * this.depth;
-    this.cubic = Math.round(this.square * this.height / cubic_foot * 10) / 10;
-    this.layers = this.height / standardBrick.height;
-  }
-}
-
-
-class FrontWall {
-  constructor() {
-    this.col = 0;
-    this.depth = standardBrick.length;
-  }
-
-  create(layer, layer_type) {
-    walls.debug(`front_wall: layer_type:${layer_type}`)
-    const aWall = {
-      layer_type: layer_type,
-      orientation: 'cross-wise',
-      units_long: kiln.units_wide,
-      x_offset: 0,
-      y_offset: 0,
-      brick_courses: [
-        ['Medium', 'external'],
-        ['Super', 'internal']
-      ]
-    };
-
-    // TODO: Clean this up to be more self-explanatory
-    if (layer_type === 'header') {
-      // Header rows only need one brick so we override that.
-      aWall.brick_courses = [
-        ['Super', 'external']
-      ];
-      aWall.y_offset -= 1;
-    }
-    // The front wall is pretty simple because it is as high as the firebox and 
-    // only interacts with the side wall
-    if (layer.belowFirebox) {
-      walls.create(layer, aWall)
-    } else {
-      // Don't need to do anything.
-    }
-  }
-}
-
-
-
+//   calculate() {
+//     // common calculations
+//     this.square = this.width * this.depth;
+//     this.cubic = Math.round(this.square * this.height / cubic_foot * 10) / 10;
+//     this.layers = this.height / standardBrick.height;
+//   }
+// }
+// class FrontWall {
+//   constructor() {
+//     this.col = 0;
+//     this.depth = standardBrick.length;
+//   }
+//   create(layer, layer_type) {
+//     walls.debug(`front_wall: layer_type:${layer_type}`)
+//     const aWall = {
+//       layer_type: layer_type,
+//       orientation: 'cross-wise',
+//       units_long: kiln.units_wide,
+//       x_offset: 0,
+//       y_offset: 0,
+//       brick_courses: [
+//         ['Medium', 'external'],
+//         ['Super', 'internal']
+//       ]
+//     };
+//     if (layer_type === 'header') {
+//       // Header rows only need one brick so we override that.
+//       aWall.brick_courses = [
+//         ['Super', 'external']
+//       ];
+//       aWall.y_offset -= 1;
+//     }
+//     // The front wall is pretty simple because it is as high as the firebox and 
+//     // only interacts with the side wall
+//     if (layer.belowFirebox) {
+//       walls.create(layer, aWall)
+//     } else {
+//       // Don't need to do anything.
+//     }
+//   }
+// }
 
 /**
  * Represents the walls of a kiln.
@@ -964,7 +956,7 @@ class Chamber extends KilnSection {
     this.debug(`Rows and columns in chamber: ${units_long}x${units_wide}`)
 
     this.width = units_wide * horizantalUnit;
-    // TODO: Make the chanmber height something that can be varied
+    // TODO: Make the chamber height something that can be varied
     this.height = this.width;
     this.square = this.width * this.length;
     this.cubic = Math.round(this.square * this.height / cubic_foot * 10) / 10;
@@ -1125,8 +1117,7 @@ class Brick {
    * @param {number} scale - The scale factor to apply to the drawing.
    */
   drawFromTop(canvasObject) {
-    // TODO: Modify this to take two canvasObjects and draw the brick on both of them
-    //  This would allow us to draw the brick on the birdseye view and the thumbnail at the same time.
+    // TODO: Rotate the canvas so that things look better on mobile devices
     let width = this.unit_width;
     let length = this.unit_length;
     canvasObject.drawRect(this.x, this.y, width, length, 'gray', this.color);
@@ -1451,12 +1442,22 @@ class CanvasContainer {
    */
 
   createCanvas(canvasName, parent_id, scale, width, height) {
-    // TODO: check if the canvas already exists and if so return it instead of creating a new one
-    // TODO: check if parent_id exists before trying to append to it
-    this.debug('Creating canvas: ' + canvasName + ' in ' + parent_id + ' with scale: ' + scale + ' width: ' + width + ' height: ' + height)
-    let canvas = new Canvas(canvasName, parent_id, scale, width, height);
-    this.canvases[canvasName] = canvas;
-    return canvas;
+    if (document.getElementById(canvasName)) {
+      // If the canvas already exists then just return it
+      this.debug(`Canvas ${canvasName} already exists`)
+      return this.canvases[canvasName];
+    } else {
+      if (!document.getElementById(parent_id)) {
+        this.debug(`Parent element ${parent_id} does not exist`)
+        return undefined;
+      }
+      else {
+        this.debug('Creating canvas: ' + canvasName + ' in ' + parent_id + ' with scale: ' + scale + ' width: ' + width + ' height: ' + height)
+        let canvas = new Canvas(canvasName, parent_id, scale, width, height);
+        this.canvases[canvasName] = canvas;
+        return canvas;
+      }
+    }
   }
   getCanvas(canvasName) {
     return this.canvases[canvasName];
@@ -1576,7 +1577,7 @@ class Page {
   readValues() {
     const shelfSizeSelect = document.getElementById('shelf_sizes');
     const shelf_size = shelfSizeSelect.options[shelfSizeSelect.selectedIndex].value;
-    console.info('Shelf size is: ' + shelf_size)
+    console.debug('Shelf size is: ' + shelf_size)
     this.handleShelfSizeUI(shelf_size);
   
     shelves.rotated = document.getElementById('shelves_rotated').checked;
