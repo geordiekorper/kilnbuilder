@@ -551,8 +551,7 @@ class Kiln {
   }
 
   debug(message) {
-let debugOn = false;
-
+    let debugOn = false;
     if (debugOn) {
       console.debug(`${this.constructor.name}: ${message}`);
     }
@@ -650,10 +649,11 @@ class Shelves {
     this.extra_space = 1;
     this.instances = [];
     this.shelf_sizes = [[8, 16], [11, 22], [11, 23], [12, 12], [12, 24], [13, 14], [13, 26], [14, 28], [16, 16], [19, 25], [20, 20], [24, 24]];
+    this.rotateDefaultSizes = this.rotateDefaultSizes.bind(this);
   }
 
   debug(message) {
-    let debugOn = true;
+    let debugOn = false;
     if (debugOn) {
       console.debug(`${this.constructor.name}: ${message}`);
     }
@@ -662,44 +662,51 @@ class Shelves {
   rotateDefaultSizes() {
     // Rotate the shelf sizes so that the longest dimension is the width (or revert to the original if it is already that way)
     // also update the dropdown to reflect the change
-    shelves.debug('rotateDefaultSizes started');
-    this.rotated = $('#shelves_rotated').is(':checked');
-
+    this.debug('rotateDefaultSizes started');
+    this.rotated = document.getElementById('shelves_rotated').checked;
+  console.debug('rotateDefaultSizes this.rotated: ' + this.rotated);
     // get currently selected shelf size by index
-    let selected_index = $("#shelf_sizes option:selected").index();
-
+    let selected_index = Array.from(document.getElementById('shelf_sizes').options).findIndex(option => option.selected);
+  
     // reverse the shelf sizes using a temporary array
     let temp = [];
     for (let i = 0; i < this.shelf_sizes.length; i++) {
       temp[i] = this.shelf_sizes[i].reverse();
     }
     this.shelf_sizes = temp;
-
+  
     // repopulate the dropdown with the new shelf sizes select the same shelf size as before and refresh the dropdown
     this.populateDropdown();
-    $("#shelf_sizes option").eq(selected_index).prop('selected', true).parent().selectmenu("refresh");
-
+    document.getElementById('shelf_sizes').options[selected_index].selected = true;
+  
     //Refresh the page now that the shelves have been rotated
     page.refreshPage();
-    this.debug('rotateDefaultSizes finished');
+    console.debug('rotateDefaultSizes finished');
   }
 
   populateDropdown() {
     // populate the dropdown with the shelf sizes
     // but first clear out the dropdown in case it has been populated before
-    $('#shelf_sizes').children().remove();
-
-    this.shelf_sizes.forEach( (size) =>  {
+    let dropdown = document.getElementById('shelf_sizes');
+    while (dropdown.firstChild) {
+      dropdown.removeChild(dropdown.firstChild);
+    }
+  
+    this.shelf_sizes.forEach((size) => {
       this.debug('Populating dropdown with shelf_size: ' + size);
       let shelf_description = size[0] + 'x' + size[1];
       this.debug('Populating dropdown with shelf_description: ' + shelf_description);
-      $('#shelf_sizes').append($('<option>', {
-        value: shelf_description,
-        text: shelf_description
-      }));
-    })
+      let option = document.createElement('option');
+      option.value = shelf_description;
+      option.text = shelf_description;
+      dropdown.appendChild(option);
+    });
+  
     // add the Custom option
-    $('#shelf_sizes').append($('<option>', { value: "Custom", text: "Custom" }));
+    let customOption = document.createElement('option');
+    customOption.value = "Custom";
+    customOption.text = "Custom";
+    dropdown.appendChild(customOption);
   }
 
   updateShelvesOffset() {
@@ -1186,7 +1193,7 @@ class Layers {
         kiln.units_wide
       );
       layer.drawBricksOnLayer(theCanvas);
-
+  
       if (currentLayer === 2) {
         let thumbnailCanvas = canvasContainer.createCanvas(
           'birdseye_thumbnail',
@@ -1196,7 +1203,9 @@ class Layers {
           kiln.units_wide
         );
         layer.drawBricksOnLayer(thumbnailCanvas);
-        $('#birdseye_thumbnail_area').on('click', function () { $('#birdseye_tab_proxy').trigger('click') })
+        document.getElementById('birdseye_thumbnail_area').addEventListener('click', function () { 
+          document.getElementById('birdseye_tab_proxy').click();
+        });
       }
     });
   }
@@ -1209,8 +1218,9 @@ class Layers {
     let myCanvas = canvasContainer.createCanvas('side_view', 'side_view_area', sideview_scale, kiln.units_long, kiln.units_high);
     let myThumbnail = canvasContainer.createCanvas('side_thumbnail', 'side_thumbnail_area', thumbnail_scale, kiln.units_long, kiln.units_high);
 
-    $('#side_thumbnail_area').on('click', function () { $('#sideview_tab_proxy').trigger('click') })
-
+    document.getElementById('side_thumbnail_area').addEventListener('click', function () {
+      document.getElementById('sideview_tab_proxy').click();
+    });
     console.log('Drawing sideview!')
 
     // Draw the bricks on the layer.
@@ -1368,11 +1378,16 @@ let debugOn = false;
   }
   createCanvasElement() {
     this.debug('Creating canvas and ctx for: ' + this.canvasName + ' in ' + this.parent_id)
-    $('<canvas>')
-      .attr({ id: this.canvasName })
-      .appendTo(`#${this.parent_id}`)
-      .css('border', "solid 1px black");
-    $('<span>&nbsp;</span>').appendTo(`#${this.parent_id}`);
+    
+    const canvas = document.createElement('canvas');
+    canvas.id = this.canvasName;
+    canvas.style.border = 'solid 1px black';
+    document.getElementById(this.parent_id).appendChild(canvas);
+  
+    const span = document.createElement('span');
+    span.innerHTML = '&nbsp;';
+    document.getElementById(this.parent_id).appendChild(span);
+  
     this.canvas = document.getElementById(this.canvasName);
     this.ctx = this.canvas.getContext('2d');
     this.canvas.height = this.height * this.scale;
@@ -1407,70 +1422,86 @@ class Page {
    * @returns {void}
    */
   readValues() {
-    const shelf_size = $('#shelf_sizes option:selected').val();
+    const shelfSizeSelect = document.getElementById('shelf_sizes');
+    const shelf_size = shelfSizeSelect.options[shelfSizeSelect.selectedIndex].value;
     console.info('Shelf size is: ' + shelf_size)
     this.handleShelfSizeUI(shelf_size);
-
-    shelves.rotated = $('#shelves_rotated').is(':checked');
-    shelves.width = parseInt($('#shelf_width').val());
-    shelves.length = parseInt($('#shelf_length').val());
-    shelves.num_wide = parseInt($('#shelves_wide').val());
-    shelves.num_long = parseInt($('#shelves_long').val());
+  
+    shelves.rotated = document.getElementById('shelves_rotated').checked;
+    shelves.width = parseInt(document.getElementById('shelf_width').value);
+    shelves.length = parseInt(document.getElementById('shelf_length').value);
+    shelves.num_wide = parseInt(document.getElementById('shelves_wide').value);
+    shelves.num_long = parseInt(document.getElementById('shelves_long').value);
   }
 
   handleShelfSizeUI(shelf_size) {
+    const nonCustomShelfElements = document.querySelectorAll('.non-custom-shelf');
+    const customShelfElements = document.querySelectorAll('.custom-shelf');
+  
     if (shelf_size !== 'Custom') {
       // If non-custom shelf size is selected then we need to 
       // hide the custom shelf size fields
       console.debug('Shelf size is not custom.');
       [shelves.length, shelves.width] = shelf_size.split('x');
       console.debug(`Shelf width is:${shelves.width} Shelf length is: ${shelves.length}`)
-      $('#shelf_width').val(shelves.width)
-      $('#shelf_length').val(shelves.length)
-      $('.non-custom-shelf').show();
-      $('.non-custom-shelf').children().show();
-      $('.custom-shelf').hide();
-      $('.custom-shelf').children().hide();
+      document.getElementById('shelf_width').value = shelves.width;
+      document.getElementById('shelf_length').value = shelves.length;
+  
+      this.showElement(nonCustomShelfElements);
+      this.hideElement(customShelfElements);
     } else {
       // If custom shelf size is selected then we need to  
       //  show the custom shelf size fields
-      $('.non-custom-shelf').hide();
-      $('.non-custom-shelf').children().hide();
-      $('.custom-shelf').show();
-      $('.custom-shelf').children().show();
+      this.hideElement(nonCustomShelfElements);
+      this.showElement(customShelfElements);
     }
   }
-
+   hideElement(elements) {
+    elements.forEach(element => {
+      element.style.display = 'none';
+      Array.from(element.children).forEach(child => {
+        child.style.display = 'none';
+      });
+    });
+  }
+   showElement(elements) {
+    elements.forEach(element => {
+      element.style.display = 'block';
+      Array.from(element.children).forEach(child => {
+        child.style.display = 'block';
+      });
+    });
+  }
   /**
    * Updates various elements on the page.
    *
    * @returns {void}
    */
   updateElements() {
-    $('#firebox_length').html(firebox.depth);
-    $('#firebox_width').html(chamber.width);
-    $('#firebox_height').html(firebox.height);
-    $('#firebox_square').html(firebox.square);
-    $('#firebox_cubic').html(firebox.cubic);
-
-    $('#chamber_length').html(chamber.length);
-    $('#chamber_width').html(chamber.width);
-    $('#chamber_height').html(chamber.height);
-    $('#chamber_square').html(chamber.square);
-    $('#chamber_cubic').html(chamber.cubic);
-
-    $('#chimney_length').html(chimney.depth);
-    $('#chimney_width').html(chamber.width);
-    $('#chimney_height').html(chimney.height);
-    $('#chimney_square').html(chamber.width * chimney.depth);
-    $('#chimney_cubic').html(chimney.cubic);
-
-    $('#kiln_length').html(kiln.length);
-    $('#kiln_width').html(kiln.width);
-
-    $('#num_supers').html(kiln.layers.num_supers);
-    $('#num_mediums').html(kiln.layers.num_mediums);
-    $('#num_IFBs').html(kiln.layers.num_IFBs);
+    document.getElementById('firebox_length').textContent = firebox.depth;
+    document.getElementById('firebox_width').textContent = chamber.width;
+    document.getElementById('firebox_height').textContent = firebox.height;
+    document.getElementById('firebox_square').textContent = firebox.square;
+    document.getElementById('firebox_cubic').textContent = firebox.cubic;
+  
+    document.getElementById('chamber_length').textContent = chamber.length;
+    document.getElementById('chamber_width').textContent = chamber.width;
+    document.getElementById('chamber_height').textContent = chamber.height;
+    document.getElementById('chamber_square').textContent = chamber.square;
+    document.getElementById('chamber_cubic').textContent = chamber.cubic;
+  
+    document.getElementById('chimney_length').textContent = chimney.depth;
+    document.getElementById('chimney_width').textContent = chamber.width;
+    document.getElementById('chimney_height').textContent = chimney.height;
+    document.getElementById('chimney_square').textContent = chamber.width * chimney.depth;
+    document.getElementById('chimney_cubic').textContent = chimney.cubic;
+  
+    document.getElementById('kiln_length').textContent = kiln.length;
+    document.getElementById('kiln_width').textContent = kiln.width;
+  
+    document.getElementById('num_supers').textContent = kiln.layers.num_supers;
+    document.getElementById('num_mediums').textContent = kiln.layers.num_mediums;
+    document.getElementById('num_IFBs').textContent = kiln.layers.num_IFBs;
   }
 
   /**
@@ -1486,13 +1517,11 @@ class Page {
   refreshPage() {
     'use strict';
     console.info('Recalculating...');
-    // Reset variables
-    // kiln.layers = [];
     // Clear the drawing areas before we start
-    $('#birdseye_area').empty();
-    $('#birdseye_thumbnail_area').empty();
-    $('#side_view_area').empty();
-    $('#side_thumbnail_area').empty();
+    document.getElementById('birdseye_area').innerHTML = '';
+    document.getElementById('birdseye_thumbnail_area').innerHTML = '';
+    document.getElementById('side_view_area').innerHTML = '';
+    document.getElementById('side_thumbnail_area').innerHTML = '';
     kiln.calculateDimensions()
     kiln.createLayers();
     kiln.draw();
@@ -1504,16 +1533,20 @@ class Page {
    * @returns {void}
    */
   initializeControls() {
+
+    // TODO: update this for a new UI library to replace jQuery UI
+    document.getElementById('shelves_rotated').addEventListener('change', shelves.rotateDefaultSizes);
     $('.controlgroup').controlgroup();
     $('.controlgroup').controlgroup('option', 'onlyVisible', true);
     $('#shelf_sizes').on('selectmenuchange', page.refreshPage);
-    $('#shelves_rotated').on('change', shelves.rotateDefaultSizes);
     $('#shelves_wide').on('spinstop', page.refreshPage);
     $('#shelves_long').on('spinstop', page.refreshPage);
     $('#shelf_width').on('spinstop', page.refreshPage);
     $('#shelf_length').on('spinstop', page.refreshPage);
-    $('.custom-shelf').hide();
-    $('.custom-shelf').children().hide();
+
+    //TODO: update hideElement to take a list of elements to do a querySelectorAll on
+    this.hideElement(document.querySelectorAll('.custom-shelf'));
+ 
     $('#tabs').tabs();
   }
 }
