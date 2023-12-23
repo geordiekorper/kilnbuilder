@@ -8,8 +8,6 @@ TODO:
   Compute ratios (not sure what this means so I am leaving it here for now)
 */
 
-let env = 'dev';
-
 // Constants
 
 // There are two things that influence the size of a kiln the bricks and the shelves
@@ -1444,11 +1442,12 @@ class CanvasContainer {
   createCanvas(canvasName, parent_id, scale, width, height) {
     if (document.getElementById(canvasName)) {
       // If the canvas already exists then just return it
-      this.debug(`Canvas ${canvasName} already exists`)
+      this.debug(`Canvas ${canvasName} already exists so returning it`)
       return this.canvases[canvasName];
     } else {
       if (!document.getElementById(parent_id)) {
-        this.debug(`Parent element ${parent_id} does not exist`)
+        // If the parent element does not exist then return undefined
+        console.error(`Parent element ${parent_id} does not exist`)
         return undefined;
       }
       else {
